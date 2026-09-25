@@ -1,0 +1,7 @@
+<!doctype html>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Idlefront · pixel fog study</title>
+<style>html,body{margin:0;overflow:hidden;background:#303d45;color:#f4f3e9;font:14px system-ui}canvas{display:block;width:100vw;height:100dvh;touch-action:none}nav{position:fixed;bottom:max(16px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);display:flex;gap:5px;padding:6px;background:#263139e8;border:1px solid #849193;border-radius:9px;max-width:94vw}button{font:inherit;color:inherit;background:#46565d;border:1px solid #829095;border-radius:5px;padding:10px;white-space:nowrap}button[aria-pressed=true]{background:#deded0;color:#253138}#status{position:fixed;top:max(12px,env(safe-area-inset-top));left:12px;pointer-events:none;background:#263139d9;padding:8px;border-radius:5px;max-width:80vw;font-size:12px}</style>
+<canvas></canvas><div id="status">Loading terrain · visual study, not a live game</div>
+<nav aria-label="Fog stages"><button data-stage="0">Spawn</button><button data-stage="1">Neighbours</button><button data-stage="2">Diplomacy</button><button data-stage="3">World</button></nav>
+<script type="module" src="/src/client/PixelFogPreview.ts"></script>

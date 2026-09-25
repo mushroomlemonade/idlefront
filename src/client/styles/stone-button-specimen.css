@@ -1,0 +1,315 @@
+/* Development-only specimen deck. This is intentionally isolated from game UI. */
+
+.atlas-ui-lab__eyebrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.atlas-ui-lab__specimen-link,
+.atlas-stone-lab__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  border: 1px solid rgb(255 224 154 / 0.45);
+  border-radius: 999px;
+  background: rgb(8 31 24 / 0.5);
+  padding: 0.46rem 0.72rem;
+  color: #fff1bd;
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 0.16),
+    0 1px 8px rgb(0 0 0 / 0.24);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.atlas-ui-lab__specimen-link:hover,
+.atlas-stone-lab__back:hover {
+  border-color: rgb(255 226 161 / 0.82);
+  background: rgb(13 49 37 / 0.74);
+  transform: translateY(-1px);
+}
+
+.atlas-ui-lab__specimen-link:focus-visible,
+.atlas-stone-lab__back:focus-visible {
+  outline: 2px solid #fff0ad;
+  outline-offset: 3px;
+}
+
+body.atlas-ui-lab-stone-active {
+  overflow: hidden !important;
+  background:
+    radial-gradient(
+      circle at 12% -15%,
+      rgb(219 188 255 / 0.15),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 88% 105%,
+      rgb(76 233 185 / 0.09),
+      transparent 30%
+    ),
+    var(--war-mahogany-texture), #170a08 !important;
+}
+
+body.atlas-ui-lab-stone-active atlas-ui-lab {
+  display: block;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.atlas-stone-lab {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: clamp(0.65rem, 1.5vw, 1rem);
+  width: min(980px, 100%);
+  height: 100dvh;
+  margin: 0 auto;
+  padding: max(0.75rem, env(safe-area-inset-top))
+    max(0.75rem, env(safe-area-inset-right))
+    max(0.6rem, env(safe-area-inset-bottom))
+    max(0.75rem, env(safe-area-inset-left));
+  overflow: hidden;
+  color: #f7eddd;
+}
+
+.atlas-stone-lab__header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(12rem, 21rem);
+  align-items: center;
+  gap: clamp(0.8rem, 2vw, 1.5rem);
+  min-width: 0;
+  border: 1px solid rgb(255 220 152 / 0.28);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.08), transparent 42%),
+    var(--war-leather-texture), #2e120e;
+  background-blend-mode: screen, soft-light, normal;
+  padding: 0.72rem clamp(0.8rem, 2vw, 1.25rem);
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 0.13),
+    inset 0 -1px rgb(0 0 0 / 0.78),
+    0 8px 22px rgb(0 0 0 / 0.28);
+}
+
+.atlas-stone-lab__title {
+  min-width: 0;
+}
+
+.atlas-stone-lab__title :where(p, h1),
+.atlas-stone-lab__instruction,
+.atlas-texture-demo__heading :where(span, h2),
+.atlas-texture-demo__note,
+.atlas-stone-lab__footer {
+  margin: 0;
+}
+
+.atlas-stone-lab__title p,
+.atlas-texture-demo__heading span {
+  color: #cdb984;
+  font-size: 0.61rem;
+  font-weight: 850;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.atlas-stone-lab__title h1 {
+  overflow: hidden;
+  margin-top: 0.18rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.05rem, 2.2vw, 1.72rem);
+  line-height: 1;
+  text-overflow: ellipsis;
+  text-shadow: 0 2px 0 #120706;
+  white-space: nowrap;
+}
+
+.atlas-stone-lab__instruction {
+  color: rgb(245 233 209 / 0.68);
+  font-size: clamp(0.66rem, 1vw, 0.75rem);
+  line-height: 1.35;
+  text-align: right;
+}
+
+.atlas-stone-lab__workspace {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.atlas-texture-demo {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: clamp(0.9rem, 3vh, 1.6rem);
+  border: 1px solid rgb(226 190 118 / 0.38);
+  border-radius: 22px;
+  background:
+    radial-gradient(
+      circle at 50% -30%,
+      rgb(255 255 255 / 0.11),
+      transparent 47%
+    ),
+    linear-gradient(180deg, rgb(255 255 255 / 0.045), transparent 34%),
+    var(--war-felt-texture), #08271d;
+  background-blend-mode: screen, soft-light, overlay, normal;
+  padding: clamp(0.9rem, 2.3vw, 1.55rem);
+  box-shadow:
+    inset 0 0 0 1px rgb(5 15 11 / 0.82),
+    inset 0 1px 0 rgb(255 245 202 / 0.09),
+    0 10px 28px rgb(0 0 0 / 0.26);
+}
+
+.atlas-texture-demo::before {
+  position: absolute;
+  inset: 5px;
+  border: 1px solid rgb(255 241 192 / 0.05);
+  border-radius: 17px;
+  content: "";
+  pointer-events: none;
+}
+
+.atlas-texture-demo__heading {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.atlas-texture-demo__heading h2 {
+  color: rgb(255 247 225 / 0.82);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(0.82rem, 1.35vw, 1.05rem);
+  font-weight: 600;
+  text-align: right;
+}
+
+.atlas-texture-demo__grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-content: center;
+  gap: clamp(0.75rem, 2vw, 1.25rem);
+  width: min(100%, 52rem);
+  margin: auto;
+}
+
+.atlas-texture-demo__button {
+  width: 100%;
+}
+
+/* Material skins are shared with production in stone-controls.css. */
+
+.atlas-texture-demo__note {
+  position: relative;
+  z-index: 1;
+  color: rgb(226 216 193 / 0.52);
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.atlas-stone-lab__footer {
+  display: flex;
+  justify-content: center;
+  gap: clamp(0.6rem, 2vw, 1.5rem);
+  overflow: hidden;
+  color: rgb(223 208 175 / 0.48);
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.atlas-stone-lab__footer code {
+  color: rgb(244 226 181 / 0.7);
+  font: inherit;
+}
+
+@media (max-width: 700px) {
+  .atlas-stone-lab__header {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .atlas-stone-lab__instruction {
+    display: none;
+  }
+
+  .atlas-texture-demo__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .atlas-stone-lab {
+    gap: 0.55rem;
+    padding: max(0.5rem, env(safe-area-inset-top))
+      max(0.5rem, env(safe-area-inset-right))
+      max(0.45rem, env(safe-area-inset-bottom))
+      max(0.5rem, env(safe-area-inset-left));
+  }
+
+  .atlas-stone-lab__header {
+    border-radius: 15px;
+    padding: 0.58rem 0.64rem;
+  }
+
+  .atlas-stone-lab__back {
+    padding: 0.46rem 0.58rem;
+    font-size: 0.56rem;
+  }
+
+  .atlas-stone-lab__title p {
+    font-size: 0.5rem;
+    letter-spacing: 0.11em;
+  }
+
+  .atlas-stone-lab__title h1 {
+    font-size: 0.92rem;
+  }
+
+  .atlas-texture-demo {
+    gap: 0.55rem;
+    border-radius: 18px;
+    padding: 0.72rem;
+  }
+
+  .atlas-texture-demo__heading h2,
+  .atlas-texture-demo__note {
+    display: none;
+  }
+
+  .atlas-texture-demo__grid {
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
+  }
+
+  .atlas-stone-lab__footer span {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .atlas-ui-lab__specimen-link,
+  .atlas-stone-lab__back {
+    transition: none;
+  }
+}

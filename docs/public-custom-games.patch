@@ -1,0 +1,1759 @@
+diff --git a/src/core/WorldPresets.ts b/src/core/WorldPresets.ts
+new file mode 100644
+--- /dev/null
++++ b/src/core/WorldPresets.ts
+@@ -0,0 +1,39 @@
++import { GameMapType } from "./game/Game";
++
++export const WORLD_PRESETS = {
++  "scheduled-earth": {
++    label: "Enormous Earth · 4×",
++    map: GameMapType.ExpandedGiantWorld,
++    trade: 1,
++    trains: 1,
++    attackDivisor: 1,
++  },
++  "great-lakes": {
++    label: "Great Lakes",
++    map: GameMapType.GreatLakes,
++    trade: 10,
++    trains: 10,
++    attackDivisor: 15,
++  },
++  "enormous-earth": {
++    label: "Enormous Earth · 16×",
++    map: GameMapType.ExpandedGiantWorldUltra,
++    trade: 5,
++    trains: 5,
++    attackDivisor: 15,
++  },
++  "hd-earth-9x": {
++    label: "HD Earth · 9×",
++    map: GameMapType.ExpandedGiantWorldLargeHDv1,
++    trade: 5,
++    trains: 5,
++    attackDivisor: 15,
++  },
++} as const;
++
++export type WorldPreset = keyof typeof WORLD_PRESETS;
++export const CUSTOM_WORLD_PRESETS = [
++  "great-lakes",
++  "enormous-earth",
++  "hd-earth-9x",
++] as const;
+diff --git a/src/core/PersistentWorldSchemas.ts b/src/core/PersistentWorldSchemas.ts
+index 384c3bcb..afff4797 100644
+--- a/src/core/PersistentWorldSchemas.ts
++++ b/src/core/PersistentWorldSchemas.ts
+@@ -1,5 +1,13 @@
+ import { z } from "zod";
+ 
++export const WorldStartModeSchema = z.enum(["scheduled", "host"]);
++export const WorldPresetSchema = z.enum([
++  "scheduled-earth",
++  "great-lakes",
++  "enormous-earth",
++  "hd-earth-9x",
++]);
++
+ export const PersistentWorldDurationSchema = z.enum(["1h", "1d", "7d"]);
+ export type PersistentWorldDuration = z.infer<
+   typeof PersistentWorldDurationSchema
+@@ -149,6 +157,8 @@ export const PersistentWorldInvitationSecretSchema = z
+ 
+ export const CreatePersistentWorldInputSchema = z
+   .object({
++    startMode: WorldStartModeSchema.optional(),
++    gamePreset: WorldPresetSchema.optional(),
+     id: PersistentWorldIdSchema,
+     name: z.string().trim().min(1).max(100),
+     targetDuration: PersistentWorldDurationSchema,
+@@ -231,6 +241,8 @@ export type PersistentWorldLobbyMember = z.infer<
+ 
+ export const PersistentWorldSchema = z
+   .object({
++    startMode: WorldStartModeSchema.optional(),
++    gamePreset: WorldPresetSchema.optional(),
+     id: PersistentWorldIdSchema,
+     name: z.string().min(1).max(100),
+     targetDuration: PersistentWorldDurationSchema,
+@@ -360,6 +372,8 @@ export type PersistentWorldReminderSelection = z.infer<
+ 
+ export const PersistentWorldViewSchema = z
+   .object({
++    startMode: WorldStartModeSchema.optional(),
++    gamePreset: WorldPresetSchema.optional(),
+     id: PersistentWorldIdSchema,
+     name: z.string().min(1).max(100),
+     targetDuration: PersistentWorldDurationSchema,
+@@ -420,6 +434,8 @@ export type PersistentWorldLobbySnapshot = z.infer<
+ 
+ export const CreatePersistentWorldRequestSchema = z
+   .object({
++    startMode: WorldStartModeSchema.optional(),
++    gamePreset: WorldPresetSchema.optional(),
+     password: z.string().min(1).max(128).optional(),
+     name: z.string().trim().min(1).max(100),
+     targetDuration: PersistentWorldDurationSchema,
+diff --git a/src/server/persistent/PersistentWorldRepository.ts b/src/server/persistent/PersistentWorldRepository.ts
+index 96c9c755..89bc39af 100644
+--- a/src/server/persistent/PersistentWorldRepository.ts
++++ b/src/server/persistent/PersistentWorldRepository.ts
+@@ -46,7 +46,7 @@ import {
+   type Turn,
+ } from "../../core/Schemas";
+ 
+-const SCHEMA_VERSION = 7;
++const SCHEMA_VERSION = 8;
+ const DEFAULT_DUE_LIMIT = 100;
+ const MAX_DUE_LIMIT = 500;
+ const DEFAULT_CHAT_LIMIT = 100;
+@@ -264,6 +264,7 @@ export class PersistentWorldRepository {
+     this.db = new DatabaseSync(this.dbPath);
+     this.configureDatabase();
+     this.migrate();
++    this.ensureWorldModeColumns();
+   }
+ 
+   private configureDatabase(): void {
+@@ -646,6 +647,26 @@ export class PersistentWorldRepository {
+     }
+   }
+ 
++  private ensureWorldModeColumns(): void {
++    // Additive migration: existing runtime configurations and journals are untouched.
++    const columns = this.db
++      .prepare("PRAGMA table_info(persistent_worlds)")
++      .all() as SqlRow[];
++    if (columns.some((column) => column.name === "start_mode")) return;
++    this.transaction(() => {
++      this.db.exec(`
++        ALTER TABLE persistent_worlds ADD COLUMN start_mode TEXT NOT NULL
++          DEFAULT 'scheduled' CHECK(start_mode IN ('scheduled', 'host'));
++        ALTER TABLE persistent_worlds ADD COLUMN game_preset TEXT;
++      `);
++      this.db
++        .prepare(
++          "INSERT INTO persistent_world_schema_migrations(version, applied_at) VALUES (8, ?)",
++        )
++        .run(this.validNow());
++    });
++  }
++
+   setWorldPassword(worldId: string, hash: string): void {
+     this.db
+       .prepare(
+@@ -1778,6 +1799,8 @@ export class PersistentWorldRepository {
+       if (existing) {
+         const sameDefinition =
+           existing.name === input.name &&
++          existing.startMode === (input.startMode ?? "scheduled") &&
++          existing.gamePreset === input.gamePreset &&
+           existing.targetDuration === input.targetDuration &&
+           existing.access === input.access &&
+           existing.mode === input.mode &&
+@@ -1808,8 +1831,8 @@ export class PersistentWorldRepository {
+           `INSERT INTO persistent_worlds(
+             id, name, target_duration, access, mode, max_humans, phase,
+             starts_at, join_closes_at, host_identity_id,
+-            invitation_secret_hash, created_at, updated_at
+-          ) VALUES (?, ?, ?, ?, ?, ?, 'scheduled', ?, ?, ?, ?, ?, ?)`,
++            invitation_secret_hash, created_at, updated_at, start_mode, game_preset
++          ) VALUES (?, ?, ?, ?, ?, ?, 'scheduled', ?, ?, ?, ?, ?, ?, ?, ?)`,
+         )
+         .run(
+           input.id,
+@@ -1826,6 +1849,8 @@ export class PersistentWorldRepository {
+             : null,
+           now,
+           now,
++          input.startMode ?? "scheduled",
++          input.gamePreset ?? null,
+         );
+       this.db
+         .prepare(
+@@ -1834,14 +1859,15 @@ export class PersistentWorldRepository {
+           ) VALUES (?, ?, ?, ?, ?)`,
+         )
+         .run(input.id, input.host.id, input.hostTeamId ?? null, now, now);
+-      this.ensureNotificationJobRows(
+-        input.id,
+-        input.host.id,
+-        "start",
+-        null,
+-        input.startsAt,
+-        now,
+-      );
++      if (input.startMode !== "host")
++        this.ensureNotificationJobRows(
++          input.id,
++          input.host.id,
++          "start",
++          null,
++          input.startsAt,
++          now,
++        );
+       return this.getWorld(input.id)!;
+     });
+   }
+@@ -1929,6 +1955,7 @@ export class PersistentWorldRepository {
+              ) AS runtime_ready
+            FROM persistent_worlds world
+            WHERE world.phase IN ('scheduled', 'active')
++             AND NOT (world.phase = 'scheduled' AND world.start_mode = 'host')
+            ORDER BY world.starts_at, world.id`,
+         )
+         .all() as SqlRow[];
+@@ -2035,6 +2062,8 @@ export class PersistentWorldRepository {
+ 
+   private worldFromRow(row: SqlRow): PersistentWorld {
+     return PersistentWorldSchema.parse({
++      startMode: String(row.start_mode),
++      gamePreset: row.game_preset == null ? undefined : String(row.game_preset),
+       id: String(row.id),
+       name: String(row.name),
+       targetDuration: String(row.target_duration),
+@@ -2076,6 +2105,12 @@ export class PersistentWorldRepository {
+     const startsAt = PersistentWorldTimestampSchema.parse(startsAtValue);
+     return this.transaction(() => {
+       const row = this.requireWorldRow(worldId);
++      if (row.start_mode === "host") {
++        throw new PersistentWorldRepositoryError(
++          "INVALID_PHASE",
++          "Custom games have no automatic schedule",
++        );
++      }
+       if (String(row.host_identity_id) !== actor.id) {
+         throw new PersistentWorldRepositoryError(
+           "FORBIDDEN",
+@@ -2160,7 +2195,8 @@ export class PersistentWorldRepository {
+         if (
+           input.teamId !== undefined &&
+           input.teamId !== existing.team_id &&
+-          now >= numberValue(world.starts_at)
++          now >= numberValue(world.starts_at) &&
++          !(world.start_mode === "host" && world.phase === "scheduled")
+         ) {
+           throw new PersistentWorldRepositoryError(
+             "SCHEDULE_LOCKED",
+@@ -2183,14 +2219,15 @@ export class PersistentWorldRepository {
+             input.worldId,
+             input.identity.id,
+           );
+-        this.ensureNotificationJobRows(
+-          input.worldId,
+-          input.identity.id,
+-          "start",
+-          null,
+-          numberValue(world.starts_at),
+-          now,
+-        );
++        if (!(world.start_mode === "host" && world.phase === "scheduled"))
++          this.ensureNotificationJobRows(
++            input.worldId,
++            input.identity.id,
++            "start",
++            null,
++            numberValue(world.starts_at),
++            now,
++          );
+         return this.getRsvp(input.worldId, input.identity.id)!;
+       }
+ 
+@@ -2203,7 +2240,8 @@ export class PersistentWorldRepository {
+       }
+       if (
+         String(world.access) === "public" &&
+-        now >= numberValue(world.starts_at)
++        now >= numberValue(world.starts_at) &&
++        !(world.start_mode === "host" && world.phase === "scheduled")
+       ) {
+         throw new PersistentWorldRepositoryError(
+           "JOIN_CLOSED",
+@@ -2221,7 +2259,10 @@ export class PersistentWorldRepository {
+             "Invitation secret is invalid",
+           );
+         }
+-        if (now >= numberValue(world.join_closes_at)) {
++        if (
++          now >= numberValue(world.join_closes_at) &&
++          !(world.start_mode === "host" && world.phase === "scheduled")
++        ) {
+           throw new PersistentWorldRepositoryError(
+             "JOIN_CLOSED",
+             "This private world's late-join window has closed",
+@@ -2247,14 +2288,15 @@ export class PersistentWorldRepository {
+           ) VALUES (?, ?, ?, ?, ?)`,
+         )
+         .run(input.worldId, input.identity.id, input.teamId ?? null, now, now);
+-      this.ensureNotificationJobRows(
+-        input.worldId,
+-        input.identity.id,
+-        "start",
+-        null,
+-        numberValue(world.starts_at),
+-        now,
+-      );
++      if (!(world.start_mode === "host" && world.phase === "scheduled"))
++        this.ensureNotificationJobRows(
++          input.worldId,
++          input.identity.id,
++          "start",
++          null,
++          numberValue(world.starts_at),
++          now,
++        );
+       if (input.identity.id !== String(world.host_identity_id)) {
+         this.db
+           .prepare(
+@@ -2499,7 +2541,7 @@ export class PersistentWorldRepository {
+            i.verified_email AS identity_verified_email
+          FROM persistent_worlds w
+          JOIN persistent_world_identities i ON i.id = w.host_identity_id
+-         WHERE w.phase = 'scheduled' AND w.starts_at <= ?
++         WHERE w.phase = 'scheduled' AND w.start_mode = 'scheduled' AND w.starts_at <= ?
+          ORDER BY w.starts_at, w.id
+          LIMIT ?`,
+       )
+@@ -2507,6 +2549,57 @@ export class PersistentWorldRepository {
+     return rows.map((row) => this.worldFromRow(row));
+   }
+ 
++  startCustomWorld(worldId: string, hostId: string): PersistentWorld {
++    return this.transaction(() => {
++      const row = this.requireWorldRow(worldId);
++      if (String(row.host_identity_id) !== hostId) {
++        throw new PersistentWorldRepositoryError(
++          "FORBIDDEN",
++          "Only the host can start this game",
++        );
++      }
++      if (row.start_mode !== "host") {
++        throw new PersistentWorldRepositoryError(
++          "INVALID_PHASE",
++          "Scheduled games start at their scheduled time",
++        );
++      }
++      // Repeated requests from the same host are harmless.
++      if (row.phase === "active") return this.worldFromRow(row);
++      if (row.phase !== "scheduled") {
++        throw new PersistentWorldRepositoryError(
++          "INVALID_PHASE",
++          "This game has ended",
++        );
++      }
++      const now = this.validNow();
++      const joinClosesAt =
++        now +
++        persistentWorldDurationMs(
++          PersistentWorldSchema.shape.targetDuration.parse(row.target_duration),
++        ) /
++          3;
++      this.db
++        .prepare(
++          `UPDATE persistent_worlds SET phase = 'active',
++        starts_at = ?, join_closes_at = ?, activated_at = ?, updated_at = ?
++        WHERE id = ? AND phase = 'scheduled'`,
++        )
++        .run(now, joinClosesAt, now, now, worldId);
++      for (const member of this.rsvpRows(worldId)) {
++        this.ensureNotificationJobRows(
++          worldId,
++          String(member.identity_id),
++          "start",
++          null,
++          now,
++          now,
++        );
++      }
++      return this.getWorld(worldId)!;
++    });
++  }
++
+   markActive(
+     worldId: string,
+     atValue: number = this.validNow(),
+@@ -2521,6 +2614,12 @@ export class PersistentWorldRepository {
+           `Cannot activate a ${String(row.phase)} world`,
+         );
+       }
++      if (row.start_mode === "host") {
++        throw new PersistentWorldRepositoryError(
++          "INVALID_PHASE",
++          "Only the host can start a custom game",
++        );
++      }
+       if (at < numberValue(row.starts_at)) {
+         throw new PersistentWorldRepositoryError(
+           "NOT_DUE",
+diff --git a/src/server/persistent/PersistentWorldService.ts b/src/server/persistent/PersistentWorldService.ts
+index 403add92..f78e05a9 100644
+--- a/src/server/persistent/PersistentWorldService.ts
++++ b/src/server/persistent/PersistentWorldService.ts
+@@ -271,14 +271,37 @@ export class PersistentWorldService {
+     const session = this.resumeSession(bearerToken);
+     const input = CreatePersistentWorldRequestSchema.parse(inputValue);
+     const now = this.now();
+-    if (input.startsAt < now + this.minimumStartDelayMs) {
++    const custom = input.startMode === "host";
++    if (
++      custom
++        ? !input.gamePreset || input.gamePreset === "scheduled-earth"
++        : input.gamePreset && input.gamePreset !== "scheduled-earth"
++    ) {
++      throw new PersistentWorldServiceError(
++        400,
++        "INVALID_PRESET",
++        "Choose a valid mode for this game",
++      );
++    }
++    if (
++      !custom &&
++      (input.mode !== "ffa" || input.targetDuration !== "1d") &&
++      input.startMode === "scheduled"
++    ) {
++      throw new PersistentWorldServiceError(
++        400,
++        "FIXED_MODE",
++        "Scheduled games use the standard Earth rules",
++      );
++    }
++    if (!custom && input.startsAt < now + this.minimumStartDelayMs) {
+       throw new PersistentWorldServiceError(
+         400,
+         "START_TOO_SOON",
+         "A world must be scheduled at least one minute in advance",
+       );
+     }
+-    if (input.startsAt > now + MAX_INVITATION_LIFETIME_MS) {
++    if (!custom && input.startsAt > now + MAX_INVITATION_LIFETIME_MS) {
+       throw new PersistentWorldServiceError(
+         400,
+         "START_TOO_LATE",
+@@ -300,9 +323,15 @@ export class PersistentWorldService {
+     const passwordHash = password ? hashWorldPassword(password) : null;
+     const world = this.repository.createWorld({
+       ...worldInput,
++      startMode: custom ? "host" : "scheduled",
++      gamePreset: custom ? input.gamePreset : "scheduled-earth",
++      startsAt: custom ? now : input.startsAt,
++      ...(!custom
++        ? { targetDuration: "1d" as const, mode: "ffa" as const }
++        : {}),
+       id,
+       host: session.identity,
+-      hostTeamId: teamId,
++      hostTeamId: custom ? teamId : null,
+       invitationSecret: invitationSecret ?? undefined,
+     });
+     if (passwordHash) this.repository.setWorldPassword(world.id, passwordHash);
+@@ -485,6 +514,13 @@ export class PersistentWorldService {
+     inputValue: unknown,
+   ): PersistentWorldReminderSelection {
+     const session = this.worldSession(worldId, bearerToken);
++    if (this.requireWorld(worldId).startMode === "host") {
++      throw new PersistentWorldServiceError(
++        400,
++        "NO_SCHEDULE",
++        "Custom games start when the host is ready",
++      );
++    }
+     const input = PersistentWorldReminderRequestSchema.parse(inputValue);
+     this.touch(worldId, session.identity.id);
+     return this.repository.setReminderSelection(
+@@ -494,6 +530,19 @@ export class PersistentWorldService {
+     );
+   }
+ 
++  startCustomWorld(
++    worldId: string,
++    bearerToken: string,
++  ): PersistentWorldLobbySnapshot {
++    const session = this.worldSession(worldId, bearerToken);
++    const world = this.repository.startCustomWorld(
++      worldId,
++      session.identity.id,
++    );
++    this.queueRuntime(world);
++    return this.snapshotFromWorld(world, session);
++  }
++
+   cancel(worldId: string, bearerToken: string): PersistentWorldLobbySnapshot {
+     const session = this.worldSession(worldId, bearerToken);
+     const world = this.repository.cancelWorld(worldId, session.identity);
+@@ -551,9 +600,10 @@ export class PersistentWorldService {
+       ? world.rsvps.find((rsvp) => rsvp.identity.id === identity.id)
+       : undefined;
+     const runtime = this.repository.getRuntime(world.id);
+-    const reminderOptionsMs = inferredReminderLeadTimes(
+-      world.startsAt - world.createdAt,
+-    );
++    const reminderOptionsMs =
++      world.startMode === "host"
++        ? []
++        : inferredReminderLeadTimes(world.startsAt - world.createdAt);
+     const selectedReminderLeadTimesMs = identity
+       ? (this.repository.getReminderSelection(world.id, identity.id)
+           ?.leadTimesMs ?? [])
+@@ -586,8 +636,11 @@ export class PersistentWorldService {
+       world.phase !== "cancelled" &&
+       runtime === undefined &&
+       (world.access === "public"
+-        ? world.phase === "scheduled" && this.now() < world.startsAt
+-        : inviteValid && this.now() < world.joinClosesAt);
++        ? world.phase === "scheduled" &&
++          (world.startMode === "host" || this.now() < world.startsAt)
++        : inviteValid &&
++          ((world.startMode === "host" && world.phase === "scheduled") ||
++            this.now() < world.joinClosesAt));
+ 
+     return PersistentWorldLobbySnapshotSchema.parse({
+       revision,
+@@ -652,6 +705,8 @@ export class PersistentWorldService {
+ 
+   private worldView(world: PersistentWorld) {
+     return PersistentWorldViewSchema.parse({
++      startMode: world.startMode,
++      gamePreset: world.gamePreset,
+       id: world.id,
+       name: world.name,
+       targetDuration: world.targetDuration,
+diff --git a/src/server/persistent/PersistentWorldRoutes.ts b/src/server/persistent/PersistentWorldRoutes.ts
+index 847a556a..80c9d9c9 100644
+--- a/src/server/persistent/PersistentWorldRoutes.ts
++++ b/src/server/persistent/PersistentWorldRoutes.ts
+@@ -398,6 +398,16 @@ export function createPersistentWorldRouter(
+     }),
+   );
+ 
++  router.post(
++    "/:id/start",
++    route((req, res) => {
++      requireNoQuery(req);
++      requireJson(req);
++      EmptyBodySchema.parse(req.body);
++      res.json(service.startCustomWorld(worldId(req), bearerToken(req, true)));
++    }),
++  );
++
+   router.use(
+     (error: unknown, _req: Request, res: Response, _next: NextFunction) => {
+       if (res.headersSent) return;
+diff --git a/src/server/PersistentWorldRuntimeBridge.ts b/src/server/PersistentWorldRuntimeBridge.ts
+index 2582d9c6..2488888f 100644
+--- a/src/server/PersistentWorldRuntimeBridge.ts
++++ b/src/server/PersistentWorldRuntimeBridge.ts
+@@ -1,23 +1,12 @@
+ import { createHash } from "crypto";
+-import {
+-  DEBUG_QUICK_START_ATTACK_SPEED_DIVISOR,
+-  DEBUG_QUICK_START_TRADE_MULTIPLIER,
+-  DEBUG_QUICK_START_TRAIN_MULTIPLIER,
+-  debugPlaytestPresetForWorldName,
+-} from "../core/DebugPlaytest";
+-import {
+-  Difficulty,
+-  GameMapSize,
+-  GameMapType,
+-  GameMode,
+-  GameType,
+-} from "../core/game/Game";
++import { Difficulty, GameMapSize, GameMode, GameType } from "../core/game/Game";
+ import {
+   persistentWorldDurationMs,
+   type PersistentWorld,
+ } from "../core/PersistentWorldSchemas";
+ import { GameConfigSchema, UsernameSchema } from "../core/Schemas";
+ import { generateID } from "../core/Util";
++import { WORLD_PRESETS } from "../core/WorldPresets";
+ import type {
+   ManagedReservedSeat,
+   MasterCreateManagedGame,
+@@ -236,8 +225,9 @@ export class PersistentWorldRuntimeBridge implements PersistentWorldRuntimeCoord
+     const upstream = await this.playlist.gameConfig(
+       world.mode === "ffa" ? "ffa" : "team",
+     );
+-    const debugPreset = debugPlaytestPresetForWorldName(world.name);
+-    const isQuickTradePlaytest = debugPreset !== null;
++    // Never infer rules from a display name or an operator's scale override.
++    // Existing runtime records bypass this method and retain their exact config.
++    const preset = WORLD_PRESETS[world.gamePreset ?? "scheduled-earth"];
+     return GameConfigSchema.parse({
+       ...upstream,
+       // The seamless-world branch changes only the physical board and its
+@@ -245,26 +235,10 @@ export class PersistentWorldRuntimeBridge implements PersistentWorldRuntimeCoord
+       // to come from the current OpenFront configuration.
+       // Operator-selected for NEW worlds only; persisted runtimes retain their
+       // original map/config. Never swap terrain beneath an existing session.
+-      gameMap: debugPreset
+-        ? debugPreset === "great-lakes"
+-          ? GameMapType.GreatLakes
+-          : debugPreset === "hd-earth-9x"
+-            ? GameMapType.ExpandedGiantWorldLargeHDv1
+-            : GameMapType.ExpandedGiantWorldUltra
+-        : process.env.IDLE_WORLD_MAP_SCALE === "4"
+-          ? GameMapType.ExpandedGiantWorldUltra
+-          : process.env.IDLE_WORLD_MAP_SCALE === "3"
+-            ? GameMapType.ExpandedGiantWorldLarge
+-            : GameMapType.ExpandedGiantWorld,
+-      tradeShipTrafficMultiplier: isQuickTradePlaytest
+-        ? DEBUG_QUICK_START_TRADE_MULTIPLIER
+-        : undefined,
+-      trainTrafficMultiplier: isQuickTradePlaytest
+-        ? DEBUG_QUICK_START_TRAIN_MULTIPLIER
+-        : undefined,
+-      territoryAttackSpeedDivisor: isQuickTradePlaytest
+-        ? DEBUG_QUICK_START_ATTACK_SPEED_DIVISOR
+-        : undefined,
++      gameMap: preset.map,
++      tradeShipTrafficMultiplier: preset.trade,
++      trainTrafficMultiplier: preset.trains,
++      territoryAttackSpeedDivisor: preset.attackDivisor,
+       serverSimulation: process.env.IDLE_SERVER_SIMULATION !== "0",
+       // User-approved lifecycle exception for long playtests. Normal conquest,
+       // economy, AI, combat, structures and explicit timers remain unchanged.
+@@ -282,6 +256,8 @@ export class PersistentWorldRuntimeBridge implements PersistentWorldRuntimeCoord
+       randomSpawn: false,
+       publicGameModifiers: {
+         ...upstream.publicGameModifiers,
++        // The selected terrain is always full-size, not the playlist's compact roll.
++        isCompact: false,
+         isRandomSpawn: false,
+       },
+       // In-sync clients vote on deterministic player state. The master stores
+diff --git a/src/client/PersistentWorldApi.ts b/src/client/PersistentWorldApi.ts
+index ab3b9bd0..d0e20f28 100644
+--- a/src/client/PersistentWorldApi.ts
++++ b/src/client/PersistentWorldApi.ts
+@@ -314,6 +314,14 @@ export class PersistentWorldApi {
+     );
+   }
+ 
++  startCustomWorld(worldId: string): Promise<PersistentWorldLobbySnapshot> {
++    return this.request(
++      `/${encodeURIComponent(worldId)}/start`,
++      PersistentWorldLobbySnapshotSchema,
++      { method: "POST", body: {}, authenticated: true },
++    );
++  }
++
+   cancel(worldId: string): Promise<PersistentWorldLobbySnapshot> {
+     return this.request(
+       `/${encodeURIComponent(worldId)}/cancel`,
+diff --git a/src/client/components/DeveloperMenu.ts b/src/client/components/DeveloperMenu.ts
+index 844652e8..d3f4337b 100644
+--- a/src/client/components/DeveloperMenu.ts
++++ b/src/client/components/DeveloperMenu.ts
+@@ -1,7 +1,6 @@
+ import { html, LitElement } from "lit";
+ import { customElement, state } from "lit/decorators.js";
+ import type { DebugPlaytestPreset } from "../../core/DebugPlaytest";
+-import { quickJoinDebugGame } from "../DebugQuickStart";
+ import { runtimeDebugEnabled } from "../RuntimeDebug";
+ import { requestHaptic } from "../ui/Haptics";
+ 
+@@ -129,22 +128,10 @@ export class IdleFrontDeveloperMenu extends LitElement {
+   };
+ 
+   private quickJoin = async (preset: DebugPlaytestPreset): Promise<void> => {
+-    this.gameAction = preset;
+-    this.gameStatus = "Looking for a test game…";
+-    try {
+-      await quickJoinDebugGame(
+-        (message) => (this.gameStatus = message),
+-        preset,
+-        "1h",
+-        true,
+-      );
+-      this.close();
+-    } catch (error) {
+-      this.gameStatus =
+-        error instanceof Error ? error.message : "Quick join failed";
+-      this.gameAction = null;
+-      requestHaptic("error");
+-    }
++    this.close();
++    window.location.assign(
++      "/worlds/new?kind=custom&preset=" + encodeURIComponent(preset),
++    );
+   };
+ 
+   render() {
+diff --git a/src/client/components/persistent-world/WorldModeSummary.ts b/src/client/components/persistent-world/WorldModeSummary.ts
+new file mode 100644
+--- /dev/null
++++ b/src/client/components/persistent-world/WorldModeSummary.ts
+@@ -0,0 +1,41 @@
++import { html, nothing } from "lit";
++import { WORLD_PRESETS, type WorldPreset } from "../../../core/WorldPresets";
++
++/** Text remains available to touch and assistive technology; icons are not a legend to memorize. */
++export function worldModeSummary(id?: WorldPreset) {
++  if (!id) return nothing;
++  const preset = WORLD_PRESETS[id];
++  const items = [
++    {
++      label: "Trade ships",
++      value: `×${preset.trade}`,
++      path: "M3 13h18l-3 6H6zM7 13V7h9v6M10 7V4M2 22l3-1 4 1 3-1 4 1 3-1 3 1",
++    },
++    {
++      label: "Trains",
++      value: `×${preset.trains}`,
++      path: "M7 3h10v14H7zM7 10h10M10 3v7M14 3v7M9 17l-3 5M15 17l3 5M8 20h8M9 14h1M14 14h1",
++    },
++    {
++      label: "Attack speed",
++      value: preset.attackDivisor === 1 ? "×1" : `÷${preset.attackDivisor}`,
++      path: "M5 19L19 5M13 4h7v7M4 14l6 6M3 21l3-3",
++    },
++  ];
++  return html`<span class="pw-mode-summary" aria-label=${preset.label}>
++    ${items.map(
++      (item) =>
++        html`<span
++          class="pw-mode-summary__stat"
++          aria-label=${item.label + " " + item.value}
++          title=${item.label + " " + item.value}
++        >
++          <svg viewBox="0 0 24 24" aria-hidden="true">
++            <path d=${item.path}></path>
++          </svg>
++          <span>${item.value}</span
++          ><span class="pw-mode-summary__label">${item.label}</span>
++        </span>`,
++    )}
++  </span>`;
++}
+diff --git a/src/client/components/persistent-world/PersistentWorldPage.ts b/src/client/components/persistent-world/PersistentWorldPage.ts
+index 3e9adc84..4ddc81b4 100644
+--- a/src/client/components/persistent-world/PersistentWorldPage.ts
++++ b/src/client/components/persistent-world/PersistentWorldPage.ts
+@@ -18,8 +18,6 @@ import {
+   persistentWorldShareUrl,
+   rememberInvitation,
+ } from "../../PersistentWorldApi";
+-import { runtimeDebugEnabled } from "../../RuntimeDebug";
+-import "../DebugQuickLaunch";
+ import "./PersistentWorldComponents";
+ import { PersistentWorldQuickChat } from "./PersistentWorldComponents";
+ import "./PersistentWorldCreationWizard";
+@@ -48,6 +46,7 @@ export class PersistentWorldPage extends LitElement {
+   @state() private loading = true;
+   @state() private submitting = false;
+   @state() private wizardDeparting = false;
++  @state() private customGame = false;
+   @state() private error = "";
+   @state() private notice: HeaderNotice | null = null;
+   @state() private identityName = "";
+@@ -58,6 +57,7 @@ export class PersistentWorldPage extends LitElement {
+   @state() private confirmingLeave = false;
+   private pollTimer: ReturnType<typeof setTimeout> | undefined;
+   private pollingWorldId: string | null = null;
++  private autoEnterWorldId: string | null = null;
+   private noticeTimer: ReturnType<typeof setTimeout> | undefined;
+   private loadSequence = 0;
+ 
+@@ -100,6 +100,7 @@ export class PersistentWorldPage extends LitElement {
+             ? this.renderIdentity()
+             : this.view === "wizard"
+               ? html`<persistent-world-creation-wizard
++                  .customGame=${this.customGame}
+                   .submitting=${this.submitting}
+                   .departing=${this.wizardDeparting}
+                   .error=${this.error}
+@@ -213,8 +214,7 @@ export class PersistentWorldPage extends LitElement {
+ 
+   private renderHub() {
+     return html`
+-      <main class="pw-hub ${runtimeDebugEnabled() ? "pw-hub--debug" : ""}">
+-        ${runtimeDebugEnabled() ? html`<idlefront-debug-quick-launch></idlefront-debug-quick-launch>` : nothing}
++      <main class="pw-hub">
+         <section class="pw-hub__intro">
+           <div>
+             <span class="pw-eyebrow" data-copy-slot="worlds.eyebrow"
+@@ -227,20 +227,33 @@ export class PersistentWorldPage extends LitElement {
+               ${placeholderCopy.worlds.description}
+             </p>
+           </div>
+-          <button
+-            class="pw-button pw-button--primary pw-hub__create"
+-            type="button"
+-            @click=${this.beginCreate}
+-          >
+-            <span class="pw-button__medallion" aria-hidden="true">＋</span>
+-            <span
+-              ><strong data-copy-slot="worlds.primaryAction"
+-                >${placeholderCopy.worlds.primaryAction}</strong
+-              ><small data-copy-slot="worlds.primaryActionDetail"
+-                >${placeholderCopy.worlds.primaryActionDetail}</small
+-              ></span
++          <div class="pw-hub__actions">
++            <button
++              class="pw-button pw-button--primary pw-hub__create"
++              type="button"
++              @click=${this.beginCreate}
+             >
+-          </button>
++              <span class="pw-button__medallion" aria-hidden="true">＋</span>
++              <span
++                ><strong data-copy-slot="worlds.primaryAction"
++                  >make a lobby</strong
++                ><small data-copy-slot="worlds.primaryActionDetail"
++                  >Scheduled · Enormous Earth · 4×</small
++                ></span
++              >
++            </button>
++            <button
++              class="pw-button pw-button--secondary pw-hub__create"
++              type="button"
++              @click=${() => this.beginCustomGame()}
++            >
++              <span class="pw-button__medallion" aria-hidden="true">◇</span>
++              <span
++                ><strong>custom game</strong
++                ><small>Choose a world · start when ready</small></span
++              >
++            </button>
++          </div>
+         </section>
+         ${
+           this.error && !this.loading
+@@ -410,12 +423,16 @@ export class PersistentWorldPage extends LitElement {
+                     </section>`
+                   : nothing
+             }
+-            <persistent-world-reminder-picker
+-              .options=${snapshot.reminderOptionsMs}
+-              .selected=${snapshot.selectedReminderLeadTimesMs}
+-              ?disabled=${!snapshot.viewer.isMember || this.submitting}
+-              @world-reminders-change=${this.updateReminders}
+-            ></persistent-world-reminder-picker>
++            ${
++              world.startMode !== "host"
++                ? html`<persistent-world-reminder-picker
++                    .options=${snapshot.reminderOptionsMs}
++                    .selected=${snapshot.selectedReminderLeadTimesMs}
++                    ?disabled=${!snapshot.viewer.isMember || this.submitting}
++                    @world-reminders-change=${this.updateReminders}
++                  ></persistent-world-reminder-picker>`
++                : nothing
++            }
+           </div>
+           <div
+             class="pw-lobby__roster ${
+@@ -475,6 +492,20 @@ export class PersistentWorldPage extends LitElement {
+     }
+     if (snapshot.viewer.isMember) {
+       return html` <div class="pw-lobby-actions">
++        ${
++          world.startMode === "host" && world.phase === "scheduled"
++            ? snapshot.viewer.isHost
++              ? html`<button
++                  class="pw-button pw-button--primary"
++                  type="button"
++                  ?disabled=${this.submitting}
++                  @click=${this.startCustomGame}
++                >
++                  ${this.submitting ? "Starting…" : "Start game"}
++                </button>`
++              : html`<span role="status">Waiting for the host to start</span>`
++            : nothing
++        }
+         <div class="pw-lobby-actions__membership">
+           <span class="pw-membership-check" aria-hidden="true">✓</span
+           ><span
+@@ -701,6 +732,8 @@ export class PersistentWorldPage extends LitElement {
+       return;
+     }
+     if (/^\/worlds\/new\/?$/.test(window.location.pathname)) {
++      this.customGame =
++        new URLSearchParams(window.location.search).get("kind") === "custom";
+       void this.openWizardRoute();
+       return;
+     }
+@@ -754,8 +787,20 @@ export class PersistentWorldPage extends LitElement {
+         this.invitationSecret,
+       );
+       if (sequence !== this.loadSequence) return;
++      if (
++        this.snapshot?.world.id === worldId &&
++        this.snapshot.world.phase === "scheduled" &&
++        snapshot.world.phase === "active" &&
++        snapshot.viewer.isMember
++      ) {
++        this.autoEnterWorldId = worldId;
++      }
+       this.snapshot = snapshot;
+       this.loading = false;
++      if (this.autoEnterWorldId === worldId && snapshot.runtimeGameId) {
++        this.autoEnterWorldId = null;
++        void this.enterRuntime(snapshot.runtimeGameId);
++      }
+     } catch (error) {
+       if (sequence !== this.loadSequence) return;
+       this.error = this.errorMessage(error);
+@@ -801,11 +846,41 @@ export class PersistentWorldPage extends LitElement {
+   }
+ 
+   private beginCreate = () => {
++    this.customGame = false;
++    this.openCreateWizard();
++  };
++
++  private beginCustomGame = () => {
++    this.customGame = true;
++    this.openCreateWizard();
++  };
++
++  private openCreateWizard = () => {
+     if (!this.session) return this.requireIdentity("create");
+     this.error = "";
+     this.wizardDeparting = false;
+     this.view = "wizard";
+-    this.navigate("/worlds/new", false);
++    this.navigate(
++      this.customGame ? "/worlds/new?kind=custom" : "/worlds/new",
++      false,
++    );
++  };
++
++  private startCustomGame = async () => {
++    if (!this.snapshot || this.submitting) return;
++    this.submitting = true;
++    this.autoEnterWorldId = this.snapshot.world.id;
++    try {
++      this.snapshot = await persistentWorldApi.startCustomWorld(
++        this.snapshot.world.id,
++      );
++      this.showNotice("Preparing the map…");
++    } catch (error) {
++      this.autoEnterWorldId = null;
++      this.showNotice(this.errorMessage(error), "error");
++    } finally {
++      this.submitting = false;
++    }
+   };
+ 
+   private createWorld = async (
+@@ -1014,7 +1089,10 @@ export class PersistentWorldPage extends LitElement {
+       this.session = created.session;
+       if (this.identityContinuation === "create") {
+         this.view = "wizard";
+-        this.navigate("/worlds/new", false);
++        this.navigate(
++          this.customGame ? "/worlds/new?kind=custom" : "/worlds/new",
++          false,
++        );
+       } else {
+         const worldId =
+           this.snapshot?.world.id ?? window.location.pathname.split("/")[2];
+@@ -1053,6 +1131,7 @@ export class PersistentWorldPage extends LitElement {
+   }
+ 
+   private showHub = (updateUrl = true) => {
++    this.autoEnterWorldId = null;
+     this.view = "hub";
+     this.snapshot = null;
+     this.stopPolling();
+diff --git a/src/client/components/persistent-world/PersistentWorldCreationWizard.ts b/src/client/components/persistent-world/PersistentWorldCreationWizard.ts
+index 903e92f4..75b45f3d 100644
+--- a/src/client/components/persistent-world/PersistentWorldCreationWizard.ts
++++ b/src/client/components/persistent-world/PersistentWorldCreationWizard.ts
+@@ -6,11 +6,14 @@ import type {
+   PersistentWorldDuration,
+   PersistentWorldMode,
+ } from "../../../core/PersistentWorldSchemas";
+-import { placeholderCopy } from "../../copy/PlaceholderCopy";
+ import {
+-  formatWorldDate,
+-  formatWorldDuration,
+-} from "./PersistentWorldComponents";
++  CUSTOM_WORLD_PRESETS,
++  WORLD_PRESETS,
++  type WorldPreset,
++} from "../../../core/WorldPresets";
++import { placeholderCopy } from "../../copy/PlaceholderCopy";
++import { formatWorldDate } from "./PersistentWorldComponents";
++import { worldModeSummary } from "./WorldModeSummary";
+ 
+ interface SchedulePreset {
+   id: string;
+@@ -57,6 +60,8 @@ const SCHEDULE_PRESETS: SchedulePreset[] = [
+ export class PersistentWorldCreationWizard extends LitElement {
+   @property({ type: Boolean }) submitting = false;
+   @property({ type: Boolean }) departing = false;
++  @property({ type: Boolean }) customGame = false;
++  @state() private gamePreset: WorldPreset = "great-lakes";
+   @property() error = "";
+   @state() private step = 0;
+   @state() private name = "";
+@@ -74,6 +79,14 @@ export class PersistentWorldCreationWizard extends LitElement {
+     return this;
+   }
+ 
++  connectedCallback() {
++    super.connectedCallback();
++    const preset = new URLSearchParams(window.location.search).get("preset");
++    if (CUSTOM_WORLD_PRESETS.some((id) => id === preset)) {
++      this.gamePreset = preset as WorldPreset;
++    }
++  }
++
+   render() {
+     const stepTitles = [
+       placeholderCopy.wizard.worldTitle,
+@@ -189,10 +202,10 @@ export class PersistentWorldCreationWizard extends LitElement {
+           <span class="pw-step-number">01</span>
+           <div>
+             <h2 data-copy-slot="wizard.worldHeading">
+-              ${placeholderCopy.wizard.worldHeading}
++              ${this.customGame ? "Choose a world" : "Enormous Earth · 4×"}
+             </h2>
+             <p data-copy-slot="wizard.worldInstructions">
+-              ${placeholderCopy.wizard.worldInstructions}
++              ${this.customGame ? "Choose your map and economy." : "One shared game mode. Choose who joins and when it begins."}
+             </p>
+           </div>
+         </div>
+@@ -208,35 +221,30 @@ export class PersistentWorldCreationWizard extends LitElement {
+               (this.name = (event.currentTarget as HTMLInputElement).value)}
+           />
+         </label>
+-        <fieldset class="pw-choice-grid pw-choice-grid--three">
+-          <legend>${placeholderCopy.wizard.paceLabel}</legend>
+-          ${(["1h", "1d", "7d"] as const).map(
+-            (duration) => html`
+-              <label
+-                class="pw-choice-card ${
+-                  this.duration === duration ? "is-selected" : ""
+-                }"
++        ${
++          this.customGame
++            ? html`<fieldset class="pw-choice-grid pw-world-options">
++                <legend>World</legend>
++                ${CUSTOM_WORLD_PRESETS.map(
++            (id) =>
++              html` <label
++                class="pw-choice-card ${this.gamePreset === id ? "is-selected" : ""}"
+               >
+                 <input
+                   type="radio"
+-                  name="duration"
+-                  value=${duration}
+-                  .checked=${this.duration === duration}
+-                  @change=${() => (this.duration = duration)}
++                  name="game-preset"
++                  value=${id}
++                  .checked=${this.gamePreset === id}
++                  @change=${() => (this.gamePreset = id)}
+                 />
+-                <span class="pw-choice-card__icon" aria-hidden="true"
+-                  >${
+-                    duration === "1h" ? "◷" : duration === "1d" ? "◑" : "✦"
+-                  }</span
+-                >
+-                <strong>${formatWorldDuration(duration)}</strong>
+-                <small
+-                  >${placeholderCopy.wizard.paceDescriptions[duration]}</small
+-                >
+-              </label>
+-            `,
++                <strong>${WORLD_PRESETS[id].label}</strong>
++                ${worldModeSummary(id)}
++                ${id === "hd-earth-9x" ? html`<small>Experimental terrain · boats may clip riverbanks</small>` : nothing}
++              </label>`,
+           )}
+-        </fieldset>
++              </fieldset>`
++            : worldModeSummary("scheduled-earth")
++        }
+         <p class="pw-disclosure" data-copy-slot="wizard.pacingDisclosure">
+           ${placeholderCopy.wizard.pacingDisclosure}
+         </p>
+@@ -275,9 +283,11 @@ export class PersistentWorldCreationWizard extends LitElement {
+               "access",
+             )}
+           </fieldset>
+-          <fieldset class="pw-choice-grid">
+-            <legend>Diplomacy</legend>
+-            ${this.binaryChoices(
++          ${
++            this.customGame
++              ? html`<fieldset class="pw-choice-grid">
++                  <legend>Diplomacy</legend>
++                  ${this.binaryChoices(
+               [
+                 [
+                   "ffa",
+@@ -290,7 +300,11 @@ export class PersistentWorldCreationWizard extends LitElement {
+               (value) => (this.mode = value as PersistentWorldMode),
+               "mode",
+             )}
+-          </fieldset>
++                </fieldset>`
++              : html`<div class="pw-schedule-confirmation">
++                  <span>Diplomacy</span><strong>Free for all</strong>
++                </div>`
++          }
+         </div>
+         ${
+           this.access === "private"
+@@ -360,6 +374,21 @@ export class PersistentWorldCreationWizard extends LitElement {
+   }
+ 
+   private renderScheduleStep() {
++    if (this.customGame)
++      return html` <div class="pw-wizard-step">
++        <div class="pw-wizard-step__intro">
++          <span class="pw-step-number">03</span>
++          <div>
++            <h2>Start when ready</h2>
++            <p>You control when this game begins.</p>
++          </div>
++        </div>
++        <div class="pw-schedule-confirmation">
++          <span>Host-controlled start</span>
++          <strong>Invite players, then press Start game in the lobby.</strong>
++          <small>No automatic countdown. You can also start on your own.</small>
++        </div>
++      </div>`;
+     return html`
+       <div class="pw-wizard-step">
+         <div class="pw-wizard-step__intro">
+@@ -438,7 +467,7 @@ export class PersistentWorldCreationWizard extends LitElement {
+             </div>
+             <h1>${this.name.trim()}</h1>
+             <p class="pw-invitation-card__date">
+-              ${formatWorldDate(this.startsAt)}
++              ${this.customGame ? "Starts when the host is ready" : formatWorldDate(this.startsAt)}
+             </p>
+             <div class="pw-invitation-card__draft-status">
+               <span aria-hidden="true"></span>
+@@ -446,8 +475,10 @@ export class PersistentWorldCreationWizard extends LitElement {
+             </div>
+             <dl class="pw-invitation-card__facts">
+               <div>
+-                <dt>Pace</dt>
+-                <dd>${formatWorldDuration(this.duration)}</dd>
++                <dt>World</dt>
++                <dd>
++                  ${WORLD_PRESETS[this.customGame ? this.gamePreset : "scheduled-earth"].label}
++                </dd>
+               </div>
+               <div>
+                 <dt>Commanders</dt>
+@@ -458,6 +489,7 @@ export class PersistentWorldCreationWizard extends LitElement {
+                 <dd>${this.mode === "ffa" ? "Free for all" : "Teams"}</dd>
+               </div>
+             </dl>
++            ${worldModeSummary(this.customGame ? this.gamePreset : "scheduled-earth")}
+           </div>
+           <div class="pw-invitation-card__draft-note">
+             <strong
+@@ -528,6 +560,7 @@ export class PersistentWorldCreationWizard extends LitElement {
+   }
+ 
+   private hasValidSchedule(): boolean {
++    if (this.customGame) return true;
+     return (
+       this.startsAt >= Date.now() + 60_000 &&
+       this.startsAt <= Date.now() + 14 * 24 * 60 * 60 * 1000
+@@ -555,16 +588,18 @@ export class PersistentWorldCreationWizard extends LitElement {
+       return;
+     }
+     const input: CreatePersistentWorldRequest = {
++      startMode: this.customGame ? "host" : "scheduled",
++      gamePreset: this.customGame ? this.gamePreset : "scheduled-earth",
+       name: this.name.trim(),
+       targetDuration: this.duration,
+       access: this.access,
+       ...(this.access === "private" && this.password
+         ? { password: this.password }
+         : {}),
+-      mode: this.mode,
++      mode: this.customGame ? this.mode : "ffa",
+       maxHumans: this.maxHumans,
+       startsAt: this.startsAt,
+-      teamId: this.mode === "teams" ? this.teamId : null,
++      teamId: this.customGame && this.mode === "teams" ? this.teamId : null,
+     };
+     this.dispatchEvent(
+       new CustomEvent("world-create", {
+diff --git a/src/client/components/persistent-world/PersistentWorldComponents.ts b/src/client/components/persistent-world/PersistentWorldComponents.ts
+index 2bd5245f..9360df09 100644
+--- a/src/client/components/persistent-world/PersistentWorldComponents.ts
++++ b/src/client/components/persistent-world/PersistentWorldComponents.ts
+@@ -7,9 +7,11 @@ import type {
+   PersistentWorldLobbySnapshot,
+   PersistentWorldQuickChatView,
+ } from "../../../core/PersistentWorldSchemas";
++import { WORLD_PRESETS } from "../../../core/WorldPresets";
+ import { placeholderCopy } from "../../copy/PlaceholderCopy";
+ import { translateText } from "../../Utils";
+ import "../ProductWordmark";
++import { worldModeSummary } from "./WorldModeSummary";
+ 
+ @customElement("idlefront-wordmark")
+ export class IdleFrontWordmark extends LitElement {
+@@ -140,7 +142,7 @@ export class PersistentWorldInvitationCard extends LitElement {
+           </div>
+           <h1>${world.name}</h1>
+           <p class="pw-invitation-card__date">
+-            ${formatWorldDate(world.startsAt)}
++            ${world.startMode === "host" && world.phase === "scheduled" ? "Starts when the host is ready" : formatWorldDate(world.startsAt)}
+           </p>
+           ${
+             world.phase === "active" && snapshot.viewer.isMember
+@@ -167,16 +169,22 @@ export class PersistentWorldInvitationCard extends LitElement {
+                     }</span
+                   >
+                 </button>`
+-              : html`<persistent-world-countdown
+-                  .startsAt=${world.startsAt}
+-                  .serverTime=${snapshot.serverTime}
+-                  .phase=${world.phase}
+-                ></persistent-world-countdown>`
++              : world.startMode === "host" && world.phase === "scheduled"
++                ? html`<div class="pw-countdown" role="status">
++                    Waiting for the host
++                  </div>`
++                : html`<persistent-world-countdown
++                    .startsAt=${world.startsAt}
++                    .serverTime=${snapshot.serverTime}
++                    .phase=${world.phase}
++                  ></persistent-world-countdown>`
+           }
+           <dl class="pw-invitation-card__facts">
+             <div>
+-              <dt>Pace</dt>
+-              <dd>${formatWorldDuration(world.targetDuration)}</dd>
++              <dt>${world.gamePreset ? "World" : "Pace"}</dt>
++              <dd>
++                ${world.gamePreset ? WORLD_PRESETS[world.gamePreset].label : formatWorldDuration(world.targetDuration)}
++              </dd>
+             </div>
+             <div>
+               <dt>Commanders</dt>
+@@ -187,6 +195,7 @@ export class PersistentWorldInvitationCard extends LitElement {
+               <dd>${world.mode === "ffa" ? "Free for all" : "Teams"}</dd>
+             </div>
+           </dl>
++          ${worldModeSummary(world.gamePreset)}
+         </div>
+         <button
+           class="pw-button pw-button--share"
+@@ -661,16 +670,18 @@ export class PersistentWorldList extends LitElement {
+           class="pw-world-card__status pw-world-card__status--${
+             card.viewerEliminated ? "eliminated" : world.phase
+           }"
+-          >${card.viewerEliminated ? "Eliminated" : world.phase}</span
++          >${card.viewerEliminated ? "Eliminated" : world.startMode === "host" && world.phase === "scheduled" ? "Waiting" : world.phase}</span
+         >
+         <span class="pw-world-card__copy">
+           <strong>${world.name}</strong>
+           <small
+             >Hosted by ${card.host.displayName} ·
+-            ${formatWorldDate(world.startsAt)}${
++            ${world.startMode === "host" && world.phase === "scheduled" ? "Host starts when ready" : formatWorldDate(world.startsAt)}${
+               card.viewerEliminated ? " · Spectate only" : ""
+             }</small
+           >
++          ${world.gamePreset ? html`<small>${WORLD_PRESETS[world.gamePreset].label}</small>` : nothing}
++          ${worldModeSummary(world.gamePreset)}
+         </span>
+         <span class="pw-world-card__facts">
+           <span>${formatWorldDuration(world.targetDuration)}</span>
+diff --git a/src/client/styles/persistent-world.css b/src/client/styles/persistent-world.css
+index 402da1fc..eb596059 100644
+--- a/src/client/styles/persistent-world.css
++++ b/src/client/styles/persistent-world.css
+@@ -1188,6 +1188,84 @@ idlefront-wordmark {
+   text-align: left;
+ }
+ 
++.pw-hub__actions {
++  display: grid;
++  grid-template-columns: repeat(2, minmax(0, 1fr));
++  gap: 0.65rem;
++  min-width: 0;
++}
++
++.pw-hub__actions .pw-hub__create {
++  min-width: 0;
++  height: 100%;
++}
++
++.pw-mode-summary {
++  display: flex;
++  flex-wrap: wrap;
++  align-items: center;
++  gap: 0.4rem 0.75rem;
++  font-size: 0.75rem;
++  font-variant-numeric: tabular-nums;
++  line-height: 1.4;
++}
++
++.pw-mode-summary__stat {
++  display: inline-flex;
++  gap: 0.25rem;
++  align-items: center;
++  white-space: nowrap;
++}
++
++.pw-mode-summary svg {
++  width: 1rem;
++  height: 1rem;
++  fill: none;
++  stroke: currentColor;
++  stroke-width: 1.6;
++  stroke-linecap: round;
++  stroke-linejoin: round;
++  flex: none;
++}
++
++.pw-world-options {
++  grid-template-columns: 1fr;
++}
++
++.pw-world-options .pw-choice-card {
++  text-align: left;
++  min-height: 0;
++  padding: 0.7rem 0.85rem;
++}
++
++.pw-world-options .pw-mode-summary {
++  margin-top: 0.35rem;
++}
++
++.pw-world-card .pw-mode-summary__label {
++  /* Keep concise labels accessible without overflowing small list cards. */
++  position: absolute;
++  width: 1px;
++  height: 1px;
++  overflow: hidden;
++  clip-path: inset(50%);
++}
++
++@media (max-width: 600px) {
++  .pw-hub__actions {
++    width: 100%;
++  }
++  .pw-hub__actions .pw-button__medallion {
++    display: none;
++  }
++  .pw-hub__actions .pw-hub__create {
++    padding: 0.65rem;
++  }
++  .pw-hub__actions small {
++    line-height: 1.4;
++  }
++}
++
+ .pw-hub__create > span:last-child {
+   display: grid;
+   gap: 0.04rem;
+diff --git a/tests/server/persistent/PersistentWorldRuntimeBridge.test.ts b/tests/server/persistent/PersistentWorldRuntimeBridge.test.ts
+index eff72526..2f27aef3 100644
+--- a/tests/server/persistent/PersistentWorldRuntimeBridge.test.ts
++++ b/tests/server/persistent/PersistentWorldRuntimeBridge.test.ts
+@@ -81,7 +81,7 @@ describe("persistent-world runtime bridge", () => {
+     return { host, gameplayHash, world };
+   }
+ 
+-  it("selects the XL board for new runtimes without changing already-persisted maps", async () => {
++  it("pins scheduled worlds to 4x area regardless of operator scale, retaining persisted maps", async () => {
+     const { world } = setup();
+     const dispatch = vi.fn(
+       async (
+@@ -104,7 +104,7 @@ describe("persistent-world runtime bridge", () => {
+       dispatch,
+     ).ensure(world);
+     expect(repository.getRuntime(world.id)?.gameConfig.gameMap).toBe(
+-      GameMapType.ExpandedGiantWorldLarge,
++      GameMapType.ExpandedGiantWorld,
+     );
+     vi.stubEnv("IDLE_WORLD_MAP_SCALE", "2");
+     await new PersistentWorldRuntimeBridge(
+@@ -113,11 +113,11 @@ describe("persistent-world runtime bridge", () => {
+       dispatch,
+     ).ensure(world);
+     expect(dispatch.mock.calls[1][0].gameConfig.gameMap).toBe(
+-      GameMapType.ExpandedGiantWorldLarge,
++      GameMapType.ExpandedGiantWorld,
+     );
+   });
+ 
+-  it("selects the full-resolution ultra board for new scale-4 runtimes", async () => {
++  it("does not let the scale-4 environment change scheduled mode", async () => {
+     const { world } = setup();
+     const dispatch = vi.fn(
+       async (
+@@ -140,11 +140,11 @@ describe("persistent-world runtime bridge", () => {
+       dispatch,
+     ).ensure(world);
+     expect(repository.getRuntime(world.id)?.gameConfig.gameMap).toBe(
+-      GameMapType.ExpandedGiantWorldUltra,
++      GameMapType.ExpandedGiantWorld,
+     );
+   });
+ 
+-  it("gives debug quick start the Great Lakes 5x trade preset", async () => {
++  it("gives custom Great Lakes 10x ships and trains while keeping 15x slower attacks", async () => {
+     const host = service.createGuestSession({ displayName: "Trade Tester" });
+     service.bindGameplayIdentity(
+       host.bearerToken,
+@@ -152,6 +152,8 @@ describe("persistent-world runtime bridge", () => {
+     );
+     const created = service.createWorld(host.bearerToken, {
+       name: `${DEBUG_QUICK_START_PREFIX}12:00 PM`,
++      startMode: "host",
++      gamePreset: "great-lakes",
+       targetDuration: "1h",
+       access: "public",
+       mode: "ffa",
+@@ -159,7 +161,10 @@ describe("persistent-world runtime bridge", () => {
+       startsAt: now + MINUTE,
+     });
+     now += MINUTE;
+-    const world = repository.markActive(created.snapshot.world.id, now);
++    const world = repository.startCustomWorld(
++      created.snapshot.world.id,
++      host.session.identity.id,
++    );
+     const dispatch = vi.fn(
+       async (
+         command: MasterCreateManagedGame,
+@@ -179,8 +184,8 @@ describe("persistent-world runtime bridge", () => {
+ 
+     expect(repository.getRuntime(world.id)?.gameConfig).toMatchObject({
+       gameMap: GameMapType.GreatLakes,
+-      tradeShipTrafficMultiplier: 5,
+-      trainTrafficMultiplier: 5,
++      tradeShipTrafficMultiplier: 10,
++      trainTrafficMultiplier: 10,
+       territoryAttackSpeedDivisor: 15,
+     });
+   });
+@@ -196,6 +201,9 @@ describe("persistent-world runtime bridge", () => {
+     );
+     const created = service.createWorld(host.bearerToken, {
+       name: `${prefix}12:01 PM`,
++      startMode: "host",
++      gamePreset:
++        prefix === DEBUG_HD_EARTH_PREFIX ? "hd-earth-9x" : "enormous-earth",
+       targetDuration: "1h",
+       access: "public",
+       mode: "ffa",
+@@ -203,7 +211,10 @@ describe("persistent-world runtime bridge", () => {
+       startsAt: now + MINUTE,
+     });
+     now += MINUTE;
+-    const world = repository.markActive(created.snapshot.world.id, now);
++    const world = repository.startCustomWorld(
++      created.snapshot.world.id,
++      host.session.identity.id,
++    );
+     const dispatch = vi.fn(
+       async (
+         command: MasterCreateManagedGame,
+diff --git a/tests/server/persistent/PersistentWorldApi.test.ts b/tests/server/persistent/PersistentWorldApi.test.ts
+index 12d4e3f4..a6c73962 100644
+--- a/tests/server/persistent/PersistentWorldApi.test.ts
++++ b/tests/server/persistent/PersistentWorldApi.test.ts
+@@ -49,6 +49,40 @@ describe("persistent-world HTTP API", () => {
+   let baseUrl: string;
+   let now: number;
+ 
++  it("exposes an authenticated, host-only start endpoint for public custom rooms", async () => {
++    const host = service.createGuestSession({ displayName: "Custom Host" });
++    const guest = service.createGuestSession({ displayName: "Custom Guest" });
++    const created = service.createWorld(host.bearerToken, {
++      name: "Public custom game",
++      startMode: "host",
++      gamePreset: "great-lakes",
++      targetDuration: "1d",
++      access: "public",
++      mode: "ffa",
++      maxHumans: 8,
++      startsAt: now,
++    });
++    const url = baseUrl + "/" + created.snapshot.world.id + "/start";
++    const start = (token: string) =>
++      fetch(url, {
++        method: "POST",
++        headers: {
++          "Content-Type": "application/json",
++          Authorization: "Bearer " + token,
++        },
++        body: "{}",
++      });
++    expect((await start(guest.bearerToken)).status).toBe(403);
++    const response = await start(host.bearerToken);
++    expect(response.status).toBe(200);
++    expect((await response.json()).world).toMatchObject({
++      phase: "active",
++      startMode: "host",
++      gamePreset: "great-lakes",
++    });
++    expect((await start(host.bearerToken)).status).toBe(200);
++  });
++
+   beforeEach(async () => {
+     directory = mkdtempSync(join(tmpdir(), "openfront-world-api-test-"));
+     now = 2_000_000_000_000;
+diff --git a/tests/server/persistent/PersistentWorldServiceLifecycle.test.ts b/tests/server/persistent/PersistentWorldServiceLifecycle.test.ts
+index cc49e9cb..1342948c 100644
+--- a/tests/server/persistent/PersistentWorldServiceLifecycle.test.ts
++++ b/tests/server/persistent/PersistentWorldServiceLifecycle.test.ts
+@@ -64,6 +64,8 @@ describe("PersistentWorldService lifecycle", () => {
+       maxHumans: number;
+       startsAt: number;
+       teamId: string | null;
++      startMode: "host" | "scheduled";
++      gamePreset: "great-lakes" | "scheduled-earth";
+     }> = {},
+   ) {
+     return service.createWorld(bearerToken, {
+@@ -227,6 +229,8 @@ describe("PersistentWorldService lifecycle", () => {
+       access: "private",
+       mode: "teams",
+       teamId: "amber",
++      startMode: "host",
++      gamePreset: "great-lakes",
+     });
+     const worldId = created.snapshot.world.id;
+     service.rsvp(worldId, player.bearerToken, {
+diff --git a/tests/server/persistent/CustomWorlds.test.ts b/tests/server/persistent/CustomWorlds.test.ts
+new file mode 100644
+--- /dev/null
++++ b/tests/server/persistent/CustomWorlds.test.ts
+@@ -0,0 +1,138 @@
++import { WORLD_PRESETS } from "../../../src/core/WorldPresets";
++import { PersistentWorldRepository } from "../../../src/server/persistent/PersistentWorldRepository";
++import { PersistentWorldService } from "../../../src/server/persistent/PersistentWorldService";
++
++describe("public custom games and scheduled worlds", () => {
++  let now: number;
++  let repository: PersistentWorldRepository;
++  let service: PersistentWorldService;
++  beforeEach(() => {
++    now = 2_000_000_000_000;
++    repository = new PersistentWorldRepository({
++      dbPath: ":memory:",
++      now: () => now,
++    });
++    service = new PersistentWorldService(repository, { now: () => now });
++  });
++  afterEach(() => service.close());
++
++  function create(startMode: "host" | "scheduled" = "host") {
++    const host = service.createGuestSession({ displayName: "Host" });
++    const created = service.createWorld(host.bearerToken, {
++      name: "A name unrelated to the preset",
++      startMode,
++      gamePreset: startMode === "host" ? "great-lakes" : "scheduled-earth",
++      targetDuration: "1d",
++      access: "public",
++      mode: "ffa",
++      maxHumans: 8,
++      startsAt: now + 60_000,
++    });
++    return { host, id: created.snapshot.world.id, snapshot: created.snapshot };
++  }
++
++  it("keeps custom rooms waiting indefinitely without timers or stale-world cancellation", () => {
++    const { id } = create();
++    now += 30 * 24 * 60 * 60_000;
++    expect(service.activateDueWorlds()).toEqual([]);
++    expect(service.archiveStaleWorlds().cancelled).toEqual([]);
++    expect(repository.getWorld(id)?.phase).toBe("scheduled");
++    expect(service.getSnapshot(id).reminderOptionsMs).toEqual([]);
++    expect(service.getSnapshot(id).viewer.canRsvp).toBe(true);
++    const guest = service.createGuestSession({ displayName: "Late guest" });
++    expect(service.rsvp(id, guest.bearerToken, {}).viewer.isMember).toBe(true);
++    service.leave(id, guest.bearerToken);
++    expect(service.getSnapshot(id, guest.bearerToken).viewer.isMember).toBe(
++      false,
++    );
++  });
++
++  it("starts once, only for the host, and anchors the actual time at the click", () => {
++    const { host, id } = create();
++    const guest = service.createGuestSession({ displayName: "Guest" });
++    service.rsvp(id, guest.bearerToken, {});
++    expect(() => service.startCustomWorld(id, guest.bearerToken)).toThrow(
++      /host/,
++    );
++    expect(() => repository.markActive(id, now + 60_000)).toThrow(/host/);
++    now += 20 * 60_000;
++    const first = service.startCustomWorld(id, host.bearerToken);
++    expect(first.world).toMatchObject({
++      phase: "active",
++      startsAt: now,
++      gamePreset: "great-lakes",
++    });
++    expect(first.members).toHaveLength(2);
++    now += 1000;
++    expect(service.startCustomWorld(id, host.bearerToken).world.startsAt).toBe(
++      first.world.startsAt,
++    );
++  });
++
++  it("does not let a host start a scheduled game early or replace its preset", () => {
++    const { id, host } = create("scheduled");
++    expect(() => service.startCustomWorld(id, host.bearerToken)).toThrow(
++      /scheduled/,
++    );
++    expect(service.activateDueWorlds()).toHaveLength(0);
++    now += 60_000;
++    expect(service.activateDueWorlds().map((world) => world.id)).toEqual([id]);
++    expect(service.activateDueWorlds()).toEqual([]);
++    expect(repository.getWorld(id)?.gamePreset).toBe("scheduled-earth");
++  });
++
++  it("cannot start cancelled games or invent custom presets", () => {
++    const { id, host } = create();
++    service.cancel(id, host.bearerToken);
++    expect(() => service.startCustomWorld(id, host.bearerToken)).toThrow(
++      /ended/,
++    );
++    for (const settings of [
++      { startMode: "host", gamePreset: "scheduled-earth" },
++      { startMode: "scheduled", gamePreset: "great-lakes" },
++      { startMode: "host", gamePreset: "unlimited-money" },
++    ]) {
++      expect(() =>
++        service.createWorld(host.bearerToken, {
++          ...settings,
++          name: "Invalid",
++          targetDuration: "1d",
++          access: "public",
++          mode: "ffa",
++          maxHumans: 8,
++          startsAt: now + 60_000,
++        }),
++      ).toThrow();
++    }
++  });
++
++  it("rejects reminders and rescheduling for custom rooms", () => {
++    const { id, host } = create();
++    expect(() =>
++      service.setReminders(id, host.bearerToken, { leadTimesMs: [60_000] }),
++    ).toThrow(/host/);
++    expect(() =>
++      repository.updateSchedule(id, host.session.identity, now + 120_000),
++    ).toThrow(/schedule/);
++  });
++
++  it("keeps Great Lakes at 10x ships/trains and the other custom choices at 5x", () => {
++    expect(WORLD_PRESETS["great-lakes"]).toMatchObject({
++      trade: 10,
++      trains: 10,
++      attackDivisor: 15,
++    });
++    for (const id of ["enormous-earth", "hd-earth-9x"] as const) {
++      expect(WORLD_PRESETS[id]).toMatchObject({
++        trade: 5,
++        trains: 5,
++        attackDivisor: 15,
++      });
++    }
++    expect(WORLD_PRESETS["scheduled-earth"]).toMatchObject({
++      trade: 1,
++      trains: 1,
++      attackDivisor: 1,
++    });
++  });
++});
+diff --git a/tests/client/CustomGameWizard.test.ts b/tests/client/CustomGameWizard.test.ts
+new file mode 100644
+--- /dev/null
++++ b/tests/client/CustomGameWizard.test.ts
+@@ -0,0 +1,83 @@
++import { render } from "lit";
++import { PersistentWorldCreationWizard } from "../../src/client/components/persistent-world/PersistentWorldCreationWizard";
++import { worldModeSummary } from "../../src/client/components/persistent-world/WorldModeSummary";
++
++describe("public game creation", () => {
++  afterEach(() => document.body.replaceChildren());
++
++  async function wizard(customGame: boolean) {
++    const element = new PersistentWorldCreationWizard();
++    element.customGame = customGame;
++    document.body.append(element);
++    await element.updateComplete;
++    return element;
++  }
++
++  async function continueStep(element: PersistentWorldCreationWizard) {
++    const button =
++      element.querySelector<HTMLButtonElement>(
++        ".pw-wizard__footer .pw-button--primary",
++      ) ??
++      element.querySelector<HTMLButtonElement>("footer .pw-button--primary");
++    expect(button).not.toBeNull();
++    button!.click();
++    await element.updateComplete;
++  }
++
++  it("offers public map presets and readable economic symbols without a debug flag", async () => {
++    const element = await wizard(true);
++    expect(element.querySelectorAll('input[name="game-preset"]')).toHaveLength(
++      3,
++    );
++    expect(element.textContent).toContain("Great Lakes");
++    expect(
++      element.querySelector('[aria-label="Trade ships ×10"]'),
++    ).not.toBeNull();
++    expect(element.querySelector('[aria-label="Trains ×10"]')).not.toBeNull();
++    expect(
++      element.querySelector('[aria-label="Attack speed ÷15"]'),
++    ).not.toBeNull();
++  });
++
++  it("uses the host-start path through every custom wizard step", async () => {
++    const element = await wizard(true);
++    const input =
++      element.querySelector<HTMLInputElement>('input[type="text"]')!;
++    input.value = "My custom room";
++    input.dispatchEvent(new Event("input", { bubbles: true }));
++    await element.updateComplete;
++    await continueStep(element);
++    await continueStep(element);
++    expect(element.textContent).toContain("Host-controlled start");
++    expect(element.querySelector('input[type="datetime-local"]')).toBeNull();
++    await continueStep(element);
++    expect(element.textContent).toContain("Starts when the host is ready");
++    const create = vi.fn();
++    element.addEventListener("world-create", create);
++    await continueStep(element);
++    expect(create).toHaveBeenCalledOnce();
++    expect(create.mock.calls[0][0].detail.input).toMatchObject({
++      startMode: "host",
++      gamePreset: "great-lakes",
++      name: "My custom room",
++    });
++  });
++
++  it("shows scheduled Earth as a fixed choice, not selectable custom economies", async () => {
++    const element = await wizard(false);
++    expect(element.textContent).toContain("Enormous Earth · 4×");
++    expect(element.querySelector('input[name="game-preset"]')).toBeNull();
++    expect(element.querySelector('input[name="duration"]')).toBeNull();
++    expect(
++      element.querySelector('[aria-label="Trade ships ×1"]'),
++    ).not.toBeNull();
++  });
++
++  it("renders modifier symbols without relying on mouse tooltips", () => {
++    render(worldModeSummary("hd-earth-9x"), document.body);
++    expect(document.body.textContent).toContain("Trade ships");
++    expect(document.body.textContent).toContain("Trains");
++    expect(document.body.textContent).toContain("Attack speed");
++    expect(document.querySelectorAll("svg")).toHaveLength(3);
++  });
++});
+

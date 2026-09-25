@@ -1,0 +1,32 @@
+/* Photographic skins for the proven native .atlas-war-button. No hit-area,
+ * pointer, hover or press behavior belongs to this material layer. */
+.atlas-war-button[data-stone="quartz"] {
+  --atlas-stone-texture: url("/images/ui/materials/stones/quartz.webp");
+}
+.atlas-war-button[data-stone="obsidian"] {
+  --atlas-stone-texture: url("/images/ui/materials/stones/obsidian.webp");
+}
+.atlas-war-button[data-stone="amethyst"] {
+  --atlas-stone-texture: url("/images/ui/materials/stones/amethyst.webp");
+}
+.atlas-war-button[data-stone="ruby"] {
+  --atlas-stone-texture: url("/images/ui/materials/stones/ruby.webp");
+}
+.atlas-war-button[data-stone="emerald"] {
+  --atlas-stone-texture: url("/images/ui/materials/stones/emerald.webp");
+}
+.atlas-war-button[data-stone]:not([data-stone="none"])::before {
+  inset: 1px 2px 28%;
+}
+.atlas-war-button[data-stone]:not([data-stone="none"])::after {
+  background-image:
+    var(--atlas-stone-texture), var(--war-control-inclusions),
+    var(--war-leather-texture);
+  background-position: center;
+  background-size:
+    cover,
+    auto,
+    184px 184px;
+  background-blend-mode: normal, screen, soft-light;
+  opacity: 0.46;
+}

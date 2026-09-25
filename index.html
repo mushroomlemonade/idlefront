@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en" class="h-full preload" translate="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <title>IdleFront — Persistent Strategy</title>
+    <link rel="manifest" href="<%- manifestHref %>" />
+    <link rel="icon" type="image/svg+xml" href="<%- faviconHref %>" />
+
+    <!-- Preload styles -->
+    <style>
+      .preload {
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity 0.5s ease-out;
+      }
+
+      /* Resolve each native/browser inset once. Individual full-screen scenes
+         consume these variables; the body itself must remain edge-to-edge. */
+      :root {
+        --atlas-safe-top: max(
+          env(safe-area-inset-top),
+          var(--native-safe-top, 0px)
+        );
+        --atlas-safe-right: max(
+          env(safe-area-inset-right),
+          var(--native-safe-right, 0px)
+        );
+        --atlas-safe-bottom: max(
+          env(safe-area-inset-bottom),
+          var(--native-safe-bottom, 0px)
+        );
+        --atlas-safe-left: max(
+          env(safe-area-inset-left),
+          var(--native-safe-left, 0px)
+        );
+      }
+
+      /* Ensure full viewport height on iOS */
+      html,
+      body {
+        height: 100%;
+        height: -webkit-fill-available;
+        min-height: 100%;
+        min-height: -webkit-fill-available;
+      }
+
+      /* Disable iOS double-tap "smart zoom" on the application shell. UI
+         stages own their overflow; the game map owns its gestures. */
+      html,
+      body {
+        touch-action: manipulation;
+        -webkit-text-size-adjust: 100%;
+      }
+
+      /* iOS magnifies the whole page when a focused form control computes to
+         less than 16px. That page zoom conflicts with the map's own camera
+         gestures and can strand the native shell at an enlarged scale. Keep
+         compact labels compact, but never render an editable control below
+         WebKit's focus-zoom threshold. */
+      @supports (-webkit-touch-callout: none) {
+        input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+        select,
+        textarea,
+        [contenteditable="true"] {
+          font-size: max(16px, 1em) !important;
+        }
+      }
+    </style>
+
+    <!-- SEO -->
+    <meta
+      name="description"
+      content="IdleFront is a persistent multiplayer strategy game played on a living world map."
+    />
+    <meta name="application-name" content="IdleFront" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="IdleFront" />
+    <meta
+      property="og:description"
+      content="Return to a persistent strategic world where every decision remains."
+    />
+    <meta property="og:image" content="<%- gameplayScreenshotUrl %>" />
+    <meta property="og:type" content="game" />
+
+    <!-- Injected from Server env -->
+    <script>
+      window.BOOTSTRAP_CONFIG = {
+        gitCommit: <%- gitCommit %>,
+        assetManifest: <%- assetManifest %>,
+        cdnBase: <%- cdnBase %>,
+        gameEnv: <%- gameEnv %>,
+        numWorkers: <%- numWorkers %>,
+        turnstileSiteKey: <%- turnstileSiteKey %>,
+        jwtAudience: <%- jwtAudience %>,
+        instanceId: <%- instanceId %>,<%- typeof serverHost !== "undefined" && serverHost ? "\n        serverHost: " + serverHost + "," : "" %>
+      };
+      document.documentElement.style.setProperty(
+        "--background-image-url",
+        `url("<%- backgroundImageUrl %>")`,
+      );
+    </script>
+
+    <!-- Cloudflare Turnstile -->
+    <script
+      src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+      async
+      defer
+    ></script>
+  </head>
+
+  <body
+    class="atlas-theme atlas-shell h-full select-none font-sans min-h-screen transition-opacity duration-300 ease-in-out flex flex-row overflow-hidden"
+    data-product="idlefront"
+  >
+    <div id="hex-grid" class="fixed inset-0 -z-50 pointer-events-none">
+      <div
+        id="background-layer"
+        class="absolute inset-x-0 top-0 -bottom-[4cm] bg-cover opacity-30 [filter:brightness(1.0)] dark:[filter:sepia(0.2)_saturate(1.2)_hue-rotate(180deg)_brightness(0.9)]"
+        style="
+          background-image: var(--background-image-url);
+          background-position: center top;
+        "
+      ></div>
+    </div>
+
+    <!-- LEFT SIDEBAR MENU -->
+
+    <div
+      id="mobile-menu-backdrop"
+      class="atlas-navigation-backdrop in-[.in-game]:hidden hidden pointer-events-none [&.open]:block [&.open]:pointer-events-auto [&.open]:fixed [&.open]:inset-0 [&.open]:z-[40000] transition-opacity"
+      role="presentation"
+      aria-hidden="true"
+    ></div>
+
+    <mobile-nav-bar
+      id="sidebar-menu"
+      class="atlas-mobile-nav peer [.in-game_&]:hidden z-[40001] fixed left-0 top-0 h-full flex flex-col justify-start overflow-hidden transform -translate-x-full w-[86%] max-w-[360px] [&.open]:translate-x-0"
+      role="dialog"
+      data-i18n-aria-label="main.menu"
+    ></mobile-nav-bar>
+
+    <!-- MAIN CONTENT AREA -->
+    <div
+      class="atlas-home-frame in-[.in-game]:hidden flex-1 relative overflow-hidden h-full transition-[margin] duration-500 ease-out will-change-[margin-left] flex flex-col"
+    >
+      <!-- Desktop Top Bar -->
+      <desktop-nav-bar></desktop-nav-bar>
+
+      <div
+        id="turnstile-container"
+        class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-99999"
+      ></div>
+
+      <atlas-global-overlays></atlas-global-overlays>
+
+      <!-- Main container with responsive padding -->
+      <main-layout class="contents">
+        <play-page class="contents"></play-page>
+        <atlas-page-deck class="contents"></atlas-page-deck>
+      </main-layout>
+    </div>
+
+    <!-- Game components -->
+    <div id="app"></div>
+
+    <atlas-game-hud></atlas-game-hud>
+
+    <!-- Scripts -->
+    <script>
+      // Remove preload class after everything is loaded
+      window.addEventListener("load", function () {
+        requestAnimationFrame(() => {
+          document.documentElement.classList.remove("preload");
+        });
+      });
+
+      // Fallback: remove preload class after timeout in case DOMContentLoaded never fires
+      setTimeout(function () {
+        document.documentElement.classList.remove("preload");
+      }, 3000);
+    </script>
+
+    <script type="module" src="/src/client/Main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,82 @@
+IDLEFRONT — CONTINUOUS TERRITORIAL PRESSURE
+Implementation specification — 2026-09-20
+
+OBJECTIVE
+Implement a playable demonstration of continuous territorial pressure within the existing Idlefront/OpenFront project. Nations inflate and deflate through authoritative tile conquest and loss, not a visual overlay. Preserve the native engine, rendering pipeline, existing application flows, and established mechanics wherever compatible. This is an intentional gameplay change, not a rewrite.
+The latest written rules in this document are authoritative. The YouTube/cartogram reference is removed. Older OpenFront/Ultimus Rex troop-slider footage is optional background and must not block implementation.
+
+POPULATION AND MOBILISATION
+Civilians and troops are parts of a finite population. Population grows over game time.
+There are initially TWO configurable pacing controls: population-growth rate and mobilisation/conversion rate. Custom games expose both. Scheduled games infer both from their duration preset. Further pacing controls, especially economic ones, may be introduced later.
+The troops/civilians slider sets a target military allocation, distinct from the existing percentage-of-army-to-attack control. Actual numbers change gradually toward that target. Display actual and target allocation clearly.
+Manual and AFK mobilisation use exactly the SAME configured conversion rate. Automation changes the target, never the rate. No instant conversion, duplicated population, or replenishment to hide losses.
+Use deterministic game-time calculations rather than frame-dependent interpolation. Document understandable units, bounds, rounding, and accounting for troops committed to attacks or transport.
+AFK defensive targeting can increase allocation to respond to attackers, subject to available population and conversion limits. Define documented initial defaults for inactivity, multiple attackers, manual override, return to activity, and de-escalation. These are implementation decisions, not previously agreed rules.
+Longplay mobilisation should respond fast enough to protect ordinary short absences without guaranteeing survival.
+Idlefront mobilisation requires foresight. Players must observe their borders, neighbours' military build-up, and alliance protection timers. Automatic defence cannot bypass slow mobilisation. An army prepared over a long period may conquer an unprepared opponent very quickly, even in near realtime.
+Slow preparation must not impose universally slow conquest.
+
+CONTINUOUS PRESSURE AND ATTACKS
+Players, bots, and nations automatically exert outward pressure on wilderness and non-allied neighbours.
+Uncommitted troops are distributed across eligible borders. Active attacks concentrate a finite troop budget on a chosen front and reduce availability elsewhere. Never apply the entire army independently against each neighbour.
+Troop strength controls attack speed while applicable terrain, defence structures, casualties, and existing combat rules retain their roles.
+Comparable effective pressure can stabilise a border. Nation size alone does not prove equilibrium. Peaceful non-allied neighbours may coexist with low military ratios when pressures balance.
+Ownership changes must update native borders, adjacency, structures, and all dependent state. Players with even one remaining owned tile remain alive; loss of the final tile permits server-authoritative elimination.
+Specify tile-transfer rules and consequences explicitly; resizing is not a cosmetic operation.
+
+ALLIANCES
+Protection duration depends on game mode:
+- quickplay: 5 minutes.
+- longplay: 30 minutes.
+- idlefront: 12 hours.
+Protection starts when the alliance is declared. During protection, the server prohibits hostile actions between the allies, including passive pressure and applicable explicit land, naval, and other attack actions.
+Show the protection countdown and its expiry clearly. Expiry makes the continuing alliance breakable; it does NOT automatically remove the alliance or begin fighting.
+After protection expires, either participant may break the alliance. Breaking it always applies a betrayal debuff, making the betrayer more vulnerable to surrounding pressure. A prepared betrayal can nevertheless succeed decisively.
+Both participants may agree to extend protection for longer durations. Neither can unilaterally lock the other into longer protection.
+Choose documented initial debuff strength/duration and extension options as tunable defaults.
+
+ECONOMY AND TRANSFERS
+A higher ACTUAL civilian share increases gold income through a common bounded multiplier on passive generation, train income, and trade-ship income.
+Preserve existing trade routes, base values, and payment events. Apply the multiplier once at the relevant income boundary. Do not multiply transfers, refunds, or unrelated rewards.
+Define and document the initial income curve and bounds. Desired slider allocation must not grant an immediate income boost before conversion happens.
+Preserve native troop donation: sending troops immediately deducts from the sender's ACTUAL troop count. Receiving and sending must obey conservation and coherent population accounting. Never duplicate strength or automatically replace donated troops.
+Enable economic allies, military protectors, prepared aggressors, and informal peaceful coexistence to emerge from these trade-offs.
+Deferred: barracks, additional military-capacity structures, military-dependent population-growth penalties. A possible future barracks increases troop capacity without increasing regeneration, but is not part of this implementation.
+
+MODES, MAPS AND EXISTING UX
+Use exactly three modes:
+quickplay — target 1 hour, 1x Earth, 5-minute alliance protection.
+longplay — target 1 day, 9x Earth, 30-minute alliance protection.
+idlefront — target 1 week, 27x Earth, 12-hour alliance protection.
+Scale means map AREA, not multiplication of each dimension.
+Apply names and mode/map mappings throughout existing creation and scheduling flows. Remove redundant modes from new-game choices, while preserving compatibility with existing saved games.
+Custom games start when the host clicks start. Scheduled games start at their scheduled time. Retain invitation, lobby, identity, and reconnect scaffolding.
+Expose Earth presets now even though larger-map performance and duration tuning are unfinished. Durations are targets, not guaranteed finish times.
+Earth is the sole official map initially. EVERY officially supported map must support all three scales. Great Lakes is the intended second official map later; adding it is outside the initial demo.
+Keep map choice conceptually distinct from pace. Use existing appropriate assets and flag missing/unsuitable variants honestly. Do not merely stretch pixels or break navigable waterways.
+
+FIRST DEMONSTRATION
+Use 1x Earth and a prepared, resettable, SERVER-AUTHORITATIVE game scenario with several neighbouring nations.
+Integrate the mobilisation slider into the existing game UI. Keep it compact, readable, touch-friendly, and safe-area-aware. Show current and desired allocation, population, and territory outcomes.
+Demonstrate gradual mobilisation, population growth, automatic expansion, stable fronts, focused attacks, alliance protection/expiry/extension, betrayal, AFK response at the ordinary rate, civilian-dependent income, conserved donations, and final-tile elimination.
+The previous tap-a-nation/area-percentage-slider demo is SCRAPPED. Players control mobilisation; territorial share is an outcome.
+Deliver a verified Atlas-tunnel web link and tunneled Expo link for iPhone testing. Atlas-dev.sightings.today is development; www.idlefront.io is production.
+
+PERFORMANCE AND ARCHITECTURE
+Inspect/profile the current implementation and reuse authoritative simulation and view-update infrastructure.
+Maintain frontier/neighbour information incrementally on ownership changes. Avoid whole-map scans, repeated frontier reconstruction, and independent attack objects per border tile per tick.
+Allocate one conserved troop budget per player. Apply casualties and conquest in deterministic order through native engine operations.
+Cache proven stable fronts, invalidating on relevant strength, allocation, terrain, structure, diplomacy, or ownership changes. Account for continuous growth/mobilisation when predicting when reconsideration is needed. Do not silently skip consequential combat.
+Keep authority on the server. Clients may interpolate presentation, but cannot decide ownership, casualties, or elimination.
+Measure simulation timing, delivery spikes, and rendering separately. Smooth phone animation is desirable, but does not compensate for a stalled server.
+Start with reliably delivered 10 TPS. Consider 20–25 TPS only after profiling proves headroom and auditing tick-based mechanics to preserve timing. Do not increase configured TPS while debt is accumulating.
+Keep geography fixed initially. Rivers, ocean routes, railroads, and structures retain native coordinates subject to normal conquest. Geographic deformation, SVG river replacement, scoreboard cartograms, and city-enlargement visualisations are deferred.
+Existing fog and recovery need compatibility checks. Do not rewrite the app or begin an unbounded large-map optimisation effort.
+
+DELIVERY AND VERIFICATION
+Save this completed prompt on the Desktop and its specification in the repository before implementation. Preserve a recoverable baseline.
+First implement shared pacing/mode scaffolding, then the small authoritative gameplay demo, then integration and measured validation.
+Test population/army conservation, donation, conversion timing, finite frontier allocation, protection against all hostile entry paths, extension, betrayal, income multipliers, last-tile survival, elimination, and same-player cross-device recovery.
+Use deterministic scenarios and tests appropriate to these intentional rule changes, not an expectation of identical outcomes to old gameplay.
+Inspect desktop and mobile UI. Report actual tests, timing measurements, defaults, and remaining limitations.
+If a major issue demands substantial architectural or gameplay departure, explain the evidence and proposed options before proceeding.

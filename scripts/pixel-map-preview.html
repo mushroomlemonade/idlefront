@@ -1,0 +1,57 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Pixel terrain renderer validation</title>
+<style>html,body{margin:0;background:#252c33;color:white;font:14px system-ui;overflow:hidden}canvas{display:block}header{position:fixed;top:12px;left:12px;background:#20272dee;padding:10px}button{margin-left:8px}</style>
+<header><span id="status">Loading isolated terrain preview…</span><button id="out">−</button><button id="in">+</button></header>
+<canvas id="map"></canvas>
+<script type="module">
+import {OverviewMapPass} from '/src/client/render/gl/passes/OverviewMapPass.ts';
+import {createRenderSettings} from '/src/client/render/gl/RenderSettings.ts';
+import {createTexture2D} from '/src/client/render/gl/utils/GlUtils.ts';
+const status = document.querySelector('#status');
+try {
+  const base = '/.data/pixel-earth27-vector-v8/maps/pixelearth27v1/';
+  const manifest = await (await fetch(base+'manifest.json')).json();
+  const {width:w,height:h,page_size:span} = manifest.map;
+  const pages = new Map();
+  // Geographic fixture only: Ontario/Quebec pages, not a simulation or a
+  // substitute for full-world performance testing. Other pages are ocean.
+  await Promise.all(manifest.map.pages.filter(p=>p.x>=4&&p.x<=6&&p.y>=1&&p.y<=3).map(async p=>{
+    pages.set(p.y*Math.ceil(w/span)+p.x,{...p,data:new Uint8Array(await (await fetch(base+p.path)).arrayBuffer())});
+  }));
+  const terrainByte = ref => {
+    const x=ref%w,y=Math.floor(ref/w),px=Math.floor(x/span),py=Math.floor(y/span);
+    const p=pages.get(py*Math.ceil(w/span)+px);
+    return p ? p.data[(y-py*span)*p.width+x-px*span] : 0;
+  };
+  const changed = new Set();
+  const world={width:()=>w,height:()=>h,terrainByte,tileState:r=>changed.has(r)?7:0,isValidRef:r=>r>=0&&r<w*h};
+  const canvas=document.querySelector('canvas');canvas.width=innerWidth;canvas.height=innerHeight;
+  const gl=canvas.getContext('webgl2',{antialias:false,preserveDrawingBuffer:true});
+  if(!gl)throw Error('WebGL2 unavailable');
+  const palette=createTexture2D(gl,{width:4096,height:2,internalFormat:gl.RGBA32F,format:gl.RGBA,type:gl.FLOAT,data:new Float32Array(4096*2*4),filter:gl.NEAREST});
+  const settings=createRenderSettings();settings.material.enabled=false;
+  const pass=new OverviewMapPass(gl,world,palette,settings);
+  let zoom=Number(new URLSearchParams(location.search).get('zoom')||'2');
+  const cx=5575,cy=2454;
+  function draw(){
+    pass.updateCamera(cx,cy,zoom,canvas.width,canvas.height);
+    const sx=2*zoom/canvas.width,sy=-2*zoom/canvas.height;
+    gl.viewport(0,0,canvas.width,canvas.height);
+    pass.draw(new Float32Array([sx,0,0,0,sy,0,-cx*sx,-cy*sy,1]));
+    const error=gl.getError();if(error)throw Error('GL error '+error);
+    status.textContent='Ontario/Quebec fixture · zoom '+zoom.toFixed(2)+' · WebGL passed';
+    document.body.dataset.ready='true';
+  }
+  document.querySelector('#out').onclick=()=>{zoom/=2;draw()};
+  document.querySelector('#in').onclick=()=>{zoom*=2;draw()};
+  draw();
+  if(new URLSearchParams(location.search).has('updates')) {
+    const refs=Array.from({length:20000},(_,i)=>(Math.floor(cy)+Math.floor(i/256))*w+Math.floor(cx)+i%256);
+    refs.forEach(r=>changed.add(r));
+    const started=performance.now();
+    pass.applyChangedTiles(refs);draw();gl.finish();
+    status.textContent += ' · 20,000 updates '+(performance.now()-started).toFixed(1)+'ms (local QA)';
+  }
+}catch(error){status.textContent=String(error);document.body.dataset.error=String(error);console.error(error)}
+</script>

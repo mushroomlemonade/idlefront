@@ -1,0 +1,11 @@
+tunnel: REPLACE_WITH_NAMED_TUNNEL_UUID
+credentials-file: /etc/cloudflared/REPLACE_WITH_NAMED_TUNNEL_UUID.json
+
+originRequest:
+  connectTimeout: 10s
+  httpHostHeader: idle.example.com
+
+ingress:
+  - hostname: idle.example.com
+    service: http://127.0.0.1:3000
+  - service: http_status:404

@@ -1,0 +1,22 @@
+[Unit]
+Description=Encrypted off-host backup for OpenFront idle SQLite
+Documentation=https://github.com/owner/repository/blob/main/docs/idle-operations.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RuntimeMaxSec=2h
+TimeoutStartSec=2h
+EnvironmentFile=/etc/openfront-idle/backup.env
+ExecStart=/usr/local/sbin/openfront-idle-backup
+User=root
+Group=root
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+# A live SQLite reader may need to create/use the adjacent -shm file while
+# producing its online snapshot. The script itself constrains source/staging
+# paths before writing.
+ReadWritePaths=/var/lib/openfront-idle

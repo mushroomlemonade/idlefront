@@ -1,0 +1,26 @@
+{
+  "cli": {
+    "version": ">= 16.0.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_GAME_URL": "http://192.168.2.118:9000/"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_GAME_URL": "https://atlas-dev.sightings.today/"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_GAME_URL": "https://atlas-dev.sightings.today/"
+      }
+    }
+  }
+}

@@ -1,0 +1,294 @@
+name: Idle demo CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      deployment_environment:
+        description: Approve and publish an immutable GHCR image
+        required: true
+        default: none
+        type: choice
+        options:
+          - none
+          - idle-staging
+          - idle-production
+
+permissions:
+  contents: read
+
+concurrency:
+  group: idle-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
+
+jobs:
+  windows-preview-syntax:
+    name: Validate Windows preview scripts
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          submodules: false
+
+      - name: Parse with Windows PowerShell
+        shell: powershell
+        run: |
+          $failed = $false
+          foreach ($file in Get-ChildItem deploy\windows\*.ps1) {
+            $tokens = $null
+            $errors = $null
+            [Management.Automation.Language.Parser]::ParseFile(
+              $file.FullName,
+              [ref]$tokens,
+              [ref]$errors
+            ) | Out-Null
+            foreach ($errorRecord in $errors) {
+              Write-Error "$($file.Name): $($errorRecord.Message)"
+              $failed = $true
+            }
+          }
+          if ($failed) { exit 1 }
+
+  verify:
+    name: Verify authoritative idle demo
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      GAME_ENV: dev
+      NUM_WORKERS: "1"
+      DOMAIN: localhost
+      TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+      API_KEY: WARNING_IDLE_CI_KEY_NOT_FOR_PRODUCTION
+      ADMIN_BOT_API_KEY: WARNING_IDLE_CI_ADMIN_KEY_NOT_FOR_PRODUCTION
+      GIT_COMMIT: ${{ github.sha }}
+      SKIP_BROWSER_OPEN: "true"
+      IDLE_ADMIN_ENABLED: "true"
+      IDLE_ADMIN_TOKEN: WARNING_IDLE_CI_ADMIN_TOKEN_NOT_FOR_PRODUCTION_32_CHARS
+      IDLE_TELEMETRY_HMAC_SECRET: WARNING_IDLE_CI_HMAC_SECRET_NOT_FOR_PRODUCTION_32_CHARS
+      IDLE_DB_PATH: ${{ runner.temp }}/openfront-idle/idle-ci.sqlite
+      PERSISTENT_WORLD_DB_PATH: ${{ runner.temp }}/openfront-idle/idle-ci.sqlite
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          submodules: false
+
+      - name: Set up Node 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Build production client and server assets
+        run: npm run build-prod
+
+      - name: Test
+        run: npm test
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Check formatting
+        # Upstream currently has a large repository-wide Prettier backlog. Keep
+        # this fork-owned gate strict for every file in the idle slice instead
+        # of making unrelated inherited formatting a release blocker.
+        run: >-
+          npx prettier --ignore-unknown --check
+          .github/workflows/idle-ci.yml
+          deploy/idle
+          deploy/windows
+          docs/idle-architecture.md
+          docs/idle-operations.md
+          docs/idle-windows-preview.md
+          eslint.config.js
+          handoff.md
+          resources/idle
+          scripts/idle-db-backup.mjs
+          scripts/idle-public-gateway.mjs
+          scripts/idle-smoke.mjs
+          scripts/idle-windows-launcher.mjs
+          src/server/idle
+          src/server/Master.ts
+          src/server/PublicAssetManifest.ts
+          src/server/StaticAssetCache.ts
+          src/server/TrustedProxy.ts
+          tests/server/idle
+          tests/server/PublicAssetManifest.test.ts
+          tests/server/StaticAssetCache.test.ts
+          tests/server/TrustedProxy.test.ts
+          vite.config.ts
+
+      - name: Validate deployment shell syntax
+        run: sh -n deploy/idle/deploy.sh deploy/idle/backup.sh
+
+      - name: Smoke HTTP, sessions, state, taps, idempotency, admin, and restart
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$(dirname "$IDLE_DB_PATH")"
+          server_log="$RUNNER_TEMP/openfront-idle-server.log"
+          smoke_artifact="$RUNNER_TEMP/openfront-idle-smoke.json"
+          server_pid=""
+
+          start_server() {
+            : > "$server_log"
+            setsid npm run start:server >"$server_log" 2>&1 &
+            server_pid=$!
+          }
+
+          stop_server() {
+            if [ -z "$server_pid" ]; then
+              return
+            fi
+            kill -TERM -- "-$server_pid" 2>/dev/null || true
+            for _ in $(seq 1 40); do
+              if ! kill -0 "$server_pid" 2>/dev/null; then
+                break
+              fi
+              sleep 0.25
+            done
+            kill -KILL -- "-$server_pid" 2>/dev/null || true
+            wait "$server_pid" 2>/dev/null || true
+            server_pid=""
+          }
+
+          cleanup() {
+            result=$?
+            stop_server
+            if [ "$result" -ne 0 ]; then
+              tail -n 200 "$server_log" || true
+            fi
+            exit "$result"
+          }
+          trap cleanup EXIT
+
+          start_server
+          node scripts/idle-smoke.mjs \
+            --base-url http://127.0.0.1:3000 \
+            --seed "$smoke_artifact"
+          stop_server
+
+          start_server
+          node scripts/idle-smoke.mjs \
+            --base-url http://127.0.0.1:3000 \
+            --verify "$smoke_artifact"
+
+      - name: Build the release container contract
+        run: |
+          docker build \
+            --file deploy/idle/Dockerfile \
+            --build-arg "GIT_COMMIT=$GITHUB_SHA" \
+            --build-arg "REPOSITORY_URL=https://github.com/$GITHUB_REPOSITORY" \
+            --tag "openfront-idle-ci:$GITHUB_SHA" \
+            .
+          docker run --rm --entrypoint sh "openfront-idle-ci:$GITHUB_SHA" \
+            -c 'test ! -e /app/proprietary && test -f /app/static/idle/index.html'
+
+      - name: Upload server log after failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: idle-server-log-${{ github.run_id }}
+          path: ${{ runner.temp }}/openfront-idle-server.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+  publish:
+    name: Publish approved immutable GHCR image
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      inputs.deployment_environment != 'none' &&
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: ${{ inputs.deployment_environment }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          submodules: false
+
+      - name: Set up Node 24 for the container smoke client
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "24"
+
+      - name: Log in to this fork's GHCR namespace
+        env:
+          GHCR_TOKEN: ${{ github.token }}
+        run: |
+          printf '%s' "$GHCR_TOKEN" | \
+            docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+
+      - name: Build and publish commit image
+        id: publish
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          image="ghcr.io/${GITHUB_REPOSITORY,,}"
+          tag="$image:$GITHUB_SHA"
+          docker build \
+            --file deploy/idle/Dockerfile \
+            --build-arg "GIT_COMMIT=$GITHUB_SHA" \
+            --build-arg "REPOSITORY_URL=https://github.com/$GITHUB_REPOSITORY" \
+            --tag "$tag" \
+            .
+          docker run --rm --entrypoint sh "$tag" -c 'test ! -e /app/proprietary'
+
+          smoke_name="idle-image-smoke-$GITHUB_RUN_ID"
+          smoke_data="$RUNNER_TEMP/idle-image-smoke-data"
+          mkdir -p "$smoke_data"
+          chmod 0777 "$smoke_data"
+          cleanup_smoke() {
+            result=$?
+            if [ "$result" -ne 0 ]; then
+              docker logs "$smoke_name" 2>/dev/null || true
+            fi
+            docker rm --force "$smoke_name" >/dev/null 2>&1 || true
+            return "$result"
+          }
+          trap cleanup_smoke EXIT
+          docker run --detach \
+            --name "$smoke_name" \
+            --read-only \
+            --cap-drop=ALL \
+            --security-opt=no-new-privileges:true \
+            --user 65532:65532 \
+            --tmpfs /tmp:rw,noexec,nosuid,nodev,size=64m \
+            --mount "type=bind,src=$smoke_data,dst=/var/lib/openfront-idle" \
+            --publish 127.0.0.1:3000:3000 \
+            --env API_KEY=WARNING_IDLE_IMAGE_SMOKE_KEY \
+            --env ADMIN_BOT_API_KEY=WARNING_IDLE_IMAGE_SMOKE_ADMIN_KEY \
+            --env IDLE_ADMIN_ENABLED=true \
+            --env IDLE_ADMIN_TOKEN=WARNING_IDLE_IMAGE_SMOKE_ADMIN_TOKEN_32_CHARS \
+            --env IDLE_TELEMETRY_HMAC_SECRET=WARNING_IDLE_IMAGE_SMOKE_HMAC_SECRET_32_CHARS \
+            "$tag"
+          IDLE_ADMIN_TOKEN=WARNING_IDLE_IMAGE_SMOKE_ADMIN_TOKEN_32_CHARS \
+            node scripts/idle-smoke.mjs --base-url http://127.0.0.1:3000
+          cleanup_smoke
+          trap - EXIT
+
+          docker push "$tag" 2>&1 | tee "$RUNNER_TEMP/idle-image-push.log"
+          digest=$(sed -n 's/.*digest: \(sha256:[a-f0-9]\{64\}\).*/\1/p' \
+            "$RUNNER_TEMP/idle-image-push.log" | tail -n 1)
+          if ! printf '%s\n' "$digest" | grep -Eq '^sha256:[a-f0-9]{64}$'; then
+            echo "Unable to determine the pushed image digest" >&2
+            exit 1
+          fi
+          image_ref="$image@$digest"
+          echo "image_ref=$image_ref" >> "$GITHUB_OUTPUT"
+          echo "Published \`$image_ref\`" >> "$GITHUB_STEP_SUMMARY"

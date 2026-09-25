@@ -1,0 +1,16 @@
+name: IdleFront deployment notice
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  deployment-notice:
+    name: Deployment is operator-managed
+    runs-on: ubuntu-latest
+    steps:
+      - name: Explain the deployment boundary
+        run: |
+          echo "IdleFront production deployment is managed by its own server."
+          echo "This fork does not deploy to OpenFront infrastructure."

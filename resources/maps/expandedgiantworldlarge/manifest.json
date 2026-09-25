@@ -1,0 +1,1268 @@
+{
+  "categories": ["world"],
+  "id": "ExpandedGiantWorldLarge",
+  "map": {
+    "format": "paged-v1",
+    "width": 12324,
+    "height": 5844,
+    "num_land_tiles": 21018627,
+    "page_size": 1024,
+    "pages_wide": 13,
+    "pages_high": 6,
+    "pages": [
+      {
+        "x": 0,
+        "y": 0,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/0-0.bin",
+        "byte_length": 1048576,
+        "sha256": "42e441e057a02d4fd52332e3ceec8537145aa18af184b356b5bcc7abeede86b7"
+      },
+      {
+        "x": 1,
+        "y": 0,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/1-0.bin",
+        "byte_length": 1048576,
+        "sha256": "13934484f55f28608cd7c3f2321d57ab35f133a3b8fe45053e2fe9e0e90c98ff"
+      },
+      {
+        "x": 2,
+        "y": 0,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/2-0.bin",
+        "byte_length": 1048576,
+        "sha256": "1c53e4f777dbb7a84623962dd7cf8746aee93d5e1a5da7e0822cd4a79e89a28a"
+      },
+      {
+        "x": 3,
+        "y": 0,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/3-0.bin",
+        "byte_length": 1048576,
+        "sha256": "3eb050491a1aaffed1b73725e739446c9e70946beffcb8e28e6cf058bb7ee025"
+      },
+      {
+        "x": 4,
+        "y": 0,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/4-0.bin",
+        "byte_length": 1048576,
+        "sha256": "24cf511be65e2d52608a25d422af5be1bb8833daebe4685835d86ae69e569613"
+      },
+      {
+        "x": 5,
+        "y": 0,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/5-0.bin",
+        "byte_length": 1048576,
+        "sha256": "399fc33465aeb555fc01424b0b9b2a280a3555fa93260b1dee21ccd3f3363697"
+      },
+      {
+        "x": 6,
+        "y": 0,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/6-0.bin",
+        "byte_length": 1048576,
+        "sha256": "afd64373b9859410860e11a54986e9306dd5e44f034b93094039319eb5584d9b"
+      },
+      {
+        "x": 7,
+        "y": 0,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/7-0.bin",
+        "byte_length": 1048576,
+        "sha256": "8fafbad882b5ad532ada2dc938d81802818d6f908410ff39c5f686c036641a98"
+      },
+      {
+        "x": 8,
+        "y": 0,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/8-0.bin",
+        "byte_length": 1048576,
+        "sha256": "9efabf76f8edd7131e399272d92a8d527ddf192b7f788777edea3ac3616193dc"
+      },
+      {
+        "x": 9,
+        "y": 0,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/9-0.bin",
+        "byte_length": 1048576,
+        "sha256": "f37cacd7151f663ec25c0d66bbe451ee16b4f038c7a9c545e985e682a2bb099d"
+      },
+      {
+        "x": 10,
+        "y": 0,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/10-0.bin",
+        "byte_length": 1048576,
+        "sha256": "46c6cbee07083d8c0456bb67af99ed046762ce93a9ac4c7d6884b08318fdd472"
+      },
+      {
+        "x": 11,
+        "y": 0,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/11-0.bin",
+        "byte_length": 1048576,
+        "sha256": "77aa2e436708d8ad6fbdd053fd79008658a58fb3a2bdd87429fe6a7755e2c0a7"
+      },
+      {
+        "x": 12,
+        "y": 0,
+        "width": 36,
+        "height": 1024,
+        "path": "pages/12-0.bin",
+        "byte_length": 36864,
+        "sha256": "5055acdd35bf78aa24710fb4331e97d7fb41628076e9d86f1162d0e0aed87d10"
+      },
+      {
+        "x": 0,
+        "y": 1,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/0-1.bin",
+        "byte_length": 1048576,
+        "sha256": "31df19923a17efe2ee25771498344fa142f97a99cd00ef232d638af0cc210a01"
+      },
+      {
+        "x": 1,
+        "y": 1,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/1-1.bin",
+        "byte_length": 1048576,
+        "sha256": "c0c54707b3db199dcfde03623e2e714cf365c01986bea9776d06b08499d8afc8"
+      },
+      {
+        "x": 2,
+        "y": 1,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/2-1.bin",
+        "byte_length": 1048576,
+        "sha256": "b067b4043125ec7181247b8829289fee2e3ad75c176897940e0e24767f069dd0"
+      },
+      {
+        "x": 3,
+        "y": 1,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/3-1.bin",
+        "byte_length": 1048576,
+        "sha256": "f222217ed9701fd16cf47b9af35a8747284d6504b062cb870a1c15165c24b930"
+      },
+      {
+        "x": 4,
+        "y": 1,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/4-1.bin",
+        "byte_length": 1048576,
+        "sha256": "1a75cd71f12b1f2af982515284b0767771bf5d74324b536a1675f52959d29f6e"
+      },
+      {
+        "x": 5,
+        "y": 1,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/5-1.bin",
+        "byte_length": 1048576,
+        "sha256": "eb057dd3916dd30d11ab125e97b739f50625a6358e1f10fa248d47317af5e155"
+      },
+      {
+        "x": 6,
+        "y": 1,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/6-1.bin",
+        "byte_length": 1048576,
+        "sha256": "e8695766b849a833d5bc6b0dcfa76c9c3dc09cc7f1e15fd317e07a43761546d4"
+      },
+      {
+        "x": 7,
+        "y": 1,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/7-1.bin",
+        "byte_length": 1048576,
+        "sha256": "992e2ef49d28fc95d5061914ddad66a3529698c2b62b522a7792205c876ae4f4"
+      },
+      {
+        "x": 8,
+        "y": 1,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/8-1.bin",
+        "byte_length": 1048576,
+        "sha256": "db5fbdc166f1cccf7b45dd69d7e3b2a16cc7a3a2df64f72b7705b23c983ec6b8"
+      },
+      {
+        "x": 9,
+        "y": 1,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/9-1.bin",
+        "byte_length": 1048576,
+        "sha256": "0bb462585213e749154c6225fc74d354cef3aa2ab1bbc50b7a37e8488ed2a4f4"
+      },
+      {
+        "x": 10,
+        "y": 1,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/10-1.bin",
+        "byte_length": 1048576,
+        "sha256": "b3b6e867e09fc891ee3a911425e8bfd45748bb624edc0935397cab848154efb3"
+      },
+      {
+        "x": 11,
+        "y": 1,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/11-1.bin",
+        "byte_length": 1048576,
+        "sha256": "71d1203fdd438aa03814f4ad7659c9c534a37a92108471f46908fe8873e03b3a"
+      },
+      {
+        "x": 12,
+        "y": 1,
+        "width": 36,
+        "height": 1024,
+        "path": "pages/12-1.bin",
+        "byte_length": 36864,
+        "sha256": "b30f6b322ead265416d1c58c5279879f7665a09fb6216d69f744d7d6d57f3c20"
+      },
+      {
+        "x": 0,
+        "y": 2,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/0-2.bin",
+        "byte_length": 1048576,
+        "sha256": "799e32e4e8e6bf3d4b7844609227a711a4d82d3314b1f0b77e8080991d7ba3dd"
+      },
+      {
+        "x": 1,
+        "y": 2,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/1-2.bin",
+        "byte_length": 1048576,
+        "sha256": "e0547e790c9059fd2678e69f4fd1df41a4c76db06890aa16c3a27db57a2a4f9a"
+      },
+      {
+        "x": 2,
+        "y": 2,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/2-2.bin",
+        "byte_length": 1048576,
+        "sha256": "1fe1fed17e05de94eeff91f7292a5c5ef1e98151bd2a6397f54dbad5f9f10d58"
+      },
+      {
+        "x": 3,
+        "y": 2,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/3-2.bin",
+        "byte_length": 1048576,
+        "sha256": "6c84c35e5f58ede8f4766f8c87a1d9fb952361f035ccbed49aec9c7be23d1d95"
+      },
+      {
+        "x": 4,
+        "y": 2,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/4-2.bin",
+        "byte_length": 1048576,
+        "sha256": "2e5dcc22e4c7605ef644a13e75bb31aca04cde7ac81ee800be572d09cd37502f"
+      },
+      {
+        "x": 5,
+        "y": 2,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/5-2.bin",
+        "byte_length": 1048576,
+        "sha256": "e381615898638e9d0e3ffec8b30107381033fd5dbca8d4e175be3cea0f324fad"
+      },
+      {
+        "x": 6,
+        "y": 2,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/6-2.bin",
+        "byte_length": 1048576,
+        "sha256": "f3c4038a492bcc7f967cd1b3c8263fac177ae6d9ae9900a1b176e29c11491cc5"
+      },
+      {
+        "x": 7,
+        "y": 2,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/7-2.bin",
+        "byte_length": 1048576,
+        "sha256": "8d00464f3a677f0feeaaaee1de0e3681dbcb5dc4e7b4df4f0ed06edffc3a522f"
+      },
+      {
+        "x": 8,
+        "y": 2,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/8-2.bin",
+        "byte_length": 1048576,
+        "sha256": "142d035a61a2ea3279f19fac3d5de062a60f082e2c603b93e10ba87589c09db1"
+      },
+      {
+        "x": 9,
+        "y": 2,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/9-2.bin",
+        "byte_length": 1048576,
+        "sha256": "581b5c7bb480f6f42b36191c679631e914a6176f6f63ffd5769f845ded7070ac"
+      },
+      {
+        "x": 10,
+        "y": 2,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/10-2.bin",
+        "byte_length": 1048576,
+        "sha256": "26035501c1302c6bb1c0fe45df8b8f36f390e5b7d330d73c53613eb7ace63955"
+      },
+      {
+        "x": 11,
+        "y": 2,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/11-2.bin",
+        "byte_length": 1048576,
+        "sha256": "ddc985a3c95b1e19096e947d1d941fa194263802c7fef9860e7f9b93973a9c25"
+      },
+      {
+        "x": 12,
+        "y": 2,
+        "width": 36,
+        "height": 1024,
+        "path": "pages/12-2.bin",
+        "byte_length": 36864,
+        "sha256": "b30f6b322ead265416d1c58c5279879f7665a09fb6216d69f744d7d6d57f3c20"
+      },
+      {
+        "x": 0,
+        "y": 3,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/0-3.bin",
+        "byte_length": 1048576,
+        "sha256": "ddc985a3c95b1e19096e947d1d941fa194263802c7fef9860e7f9b93973a9c25"
+      },
+      {
+        "x": 1,
+        "y": 3,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/1-3.bin",
+        "byte_length": 1048576,
+        "sha256": "ddc985a3c95b1e19096e947d1d941fa194263802c7fef9860e7f9b93973a9c25"
+      },
+      {
+        "x": 2,
+        "y": 3,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/2-3.bin",
+        "byte_length": 1048576,
+        "sha256": "537cd62c3e45609cf145908cb649f1fc4e2215925d81c4c8bbdabd61e0748b35"
+      },
+      {
+        "x": 3,
+        "y": 3,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/3-3.bin",
+        "byte_length": 1048576,
+        "sha256": "baedd1d2b32a1a154c5c0c15cb3d138ac1b5b359ab92b37e2cda1774ff8f55dd"
+      },
+      {
+        "x": 4,
+        "y": 3,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/4-3.bin",
+        "byte_length": 1048576,
+        "sha256": "c02e580d75e70dc77dd0f5403b937fcfa5d0aa95d38b9f062d70bf921add53d2"
+      },
+      {
+        "x": 5,
+        "y": 3,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/5-3.bin",
+        "byte_length": 1048576,
+        "sha256": "4831963566d1b7ea32ca4f8c4a184941c74ad0e24bee8f8f22a6de98353c9a82"
+      },
+      {
+        "x": 6,
+        "y": 3,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/6-3.bin",
+        "byte_length": 1048576,
+        "sha256": "a05a3c4253e87d54342bd67eb7a356f17340e4fb3ca1c531da5d906cec4f3e52"
+      },
+      {
+        "x": 7,
+        "y": 3,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/7-3.bin",
+        "byte_length": 1048576,
+        "sha256": "6ea872b3510069a8c31a3b934f7c2d869279c5cad23d144f3a3b27b2f0082a8b"
+      },
+      {
+        "x": 8,
+        "y": 3,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/8-3.bin",
+        "byte_length": 1048576,
+        "sha256": "5bb31e557f721dbe2efc2b94984234577d3df729e060b780e2e89cd67a433417"
+      },
+      {
+        "x": 9,
+        "y": 3,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/9-3.bin",
+        "byte_length": 1048576,
+        "sha256": "4ba2641f914a057aed6473d2783507d40b7c4d479a7fcc10c5680dc2f2e73bbe"
+      },
+      {
+        "x": 10,
+        "y": 3,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/10-3.bin",
+        "byte_length": 1048576,
+        "sha256": "0b5cb4eb176a58292220e656aea49c13e0e9751e9062deb79507fd9276df8f68"
+      },
+      {
+        "x": 11,
+        "y": 3,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/11-3.bin",
+        "byte_length": 1048576,
+        "sha256": "42a83b02ce3f00c37828ad46e83140a46ddd468673ba02bc5bd6f5770beb871f"
+      },
+      {
+        "x": 12,
+        "y": 3,
+        "width": 36,
+        "height": 1024,
+        "path": "pages/12-3.bin",
+        "byte_length": 36864,
+        "sha256": "b30f6b322ead265416d1c58c5279879f7665a09fb6216d69f744d7d6d57f3c20"
+      },
+      {
+        "x": 0,
+        "y": 4,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/0-4.bin",
+        "byte_length": 1048576,
+        "sha256": "ddc985a3c95b1e19096e947d1d941fa194263802c7fef9860e7f9b93973a9c25"
+      },
+      {
+        "x": 1,
+        "y": 4,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/1-4.bin",
+        "byte_length": 1048576,
+        "sha256": "ddc985a3c95b1e19096e947d1d941fa194263802c7fef9860e7f9b93973a9c25"
+      },
+      {
+        "x": 2,
+        "y": 4,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/2-4.bin",
+        "byte_length": 1048576,
+        "sha256": "28169595418868a2e99e5dcea7475507550b6cc5c812b6332e0283c45e024f91"
+      },
+      {
+        "x": 3,
+        "y": 4,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/3-4.bin",
+        "byte_length": 1048576,
+        "sha256": "3dff834c2e46f55683ff87d07d6e3787dc5a9f59a7509057dfe8e1c39746bbe0"
+      },
+      {
+        "x": 4,
+        "y": 4,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/4-4.bin",
+        "byte_length": 1048576,
+        "sha256": "8d8e921cab9bb94b423492f5bd48f8a1534f5d89417c3e5d59a235a65d8d3a60"
+      },
+      {
+        "x": 5,
+        "y": 4,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/5-4.bin",
+        "byte_length": 1048576,
+        "sha256": "ddc985a3c95b1e19096e947d1d941fa194263802c7fef9860e7f9b93973a9c25"
+      },
+      {
+        "x": 6,
+        "y": 4,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/6-4.bin",
+        "byte_length": 1048576,
+        "sha256": "e3a50382909d4a02361cb92a3167593fd9f03247adf524eb5d96c5c611dc5ed9"
+      },
+      {
+        "x": 7,
+        "y": 4,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/7-4.bin",
+        "byte_length": 1048576,
+        "sha256": "5b391f98f631d578fbf670d29f83c51a68430f12f27793d50564627f281aca86"
+      },
+      {
+        "x": 8,
+        "y": 4,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/8-4.bin",
+        "byte_length": 1048576,
+        "sha256": "288ccf558567b2bb1c6edc9bfc0cad327f06365158cb4a0048826f91cea6de1c"
+      },
+      {
+        "x": 9,
+        "y": 4,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/9-4.bin",
+        "byte_length": 1048576,
+        "sha256": "6f03812fa13f7910e908272c7eb770b4b17cbd0013efcde1ab43b9ed909f7e10"
+      },
+      {
+        "x": 10,
+        "y": 4,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/10-4.bin",
+        "byte_length": 1048576,
+        "sha256": "b57fa1b2aae77edabca651f1c2e4e128fd6d5656f54fe29aa2d672c63d89cb7a"
+      },
+      {
+        "x": 11,
+        "y": 4,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/11-4.bin",
+        "byte_length": 1048576,
+        "sha256": "6ea2850394d9b2668d2502ca6b611fdd9af3a238190ca806a00d567d8ebf9a95"
+      },
+      {
+        "x": 12,
+        "y": 4,
+        "width": 36,
+        "height": 1024,
+        "path": "pages/12-4.bin",
+        "byte_length": 36864,
+        "sha256": "b30f6b322ead265416d1c58c5279879f7665a09fb6216d69f744d7d6d57f3c20"
+      },
+      {
+        "x": 0,
+        "y": 5,
+        "width": 1024,
+        "height": 724,
+        "path": "pages/0-5.bin",
+        "byte_length": 741376,
+        "sha256": "d58646185b3d789c5ce39a195bff46da6cabb19afa7c2a528c14c3ab3fe72679"
+      },
+      {
+        "x": 1,
+        "y": 5,
+        "width": 1024,
+        "height": 724,
+        "path": "pages/1-5.bin",
+        "byte_length": 741376,
+        "sha256": "9ab6861d147d158c0bdd8a440304e4a831c15cf3e844418f245d7b033474570b"
+      },
+      {
+        "x": 2,
+        "y": 5,
+        "width": 1024,
+        "height": 724,
+        "path": "pages/2-5.bin",
+        "byte_length": 741376,
+        "sha256": "7279be92ebb99ddeb3e24dd599756d34bcf21fbbb4fd04fafd591497dc676c52"
+      },
+      {
+        "x": 3,
+        "y": 5,
+        "width": 1024,
+        "height": 724,
+        "path": "pages/3-5.bin",
+        "byte_length": 741376,
+        "sha256": "1abe6844508f428467232661dcc806d4285b61785840091a5609f6b7dcc16d9c"
+      },
+      {
+        "x": 4,
+        "y": 5,
+        "width": 1024,
+        "height": 724,
+        "path": "pages/4-5.bin",
+        "byte_length": 741376,
+        "sha256": "ab002a2a1d1d1220c17d2974f2aabb9f039c693703dc9f0de2403c59e6c96e9f"
+      },
+      {
+        "x": 5,
+        "y": 5,
+        "width": 1024,
+        "height": 724,
+        "path": "pages/5-5.bin",
+        "byte_length": 741376,
+        "sha256": "9f5ecd798a8e7661e6daab51a9f3c2f2cd4afea39adda77c104edac1338be2ea"
+      },
+      {
+        "x": 6,
+        "y": 5,
+        "width": 1024,
+        "height": 724,
+        "path": "pages/6-5.bin",
+        "byte_length": 741376,
+        "sha256": "98cefe5fd4f575d80106664d89a2cd647edbe2600460c0ffe2e5601978a929a8"
+      },
+      {
+        "x": 7,
+        "y": 5,
+        "width": 1024,
+        "height": 724,
+        "path": "pages/7-5.bin",
+        "byte_length": 741376,
+        "sha256": "78115c072613a2017881e2392e72d7f7d07c827a56da395dcac587a0904737d7"
+      },
+      {
+        "x": 8,
+        "y": 5,
+        "width": 1024,
+        "height": 724,
+        "path": "pages/8-5.bin",
+        "byte_length": 741376,
+        "sha256": "d4fbbb336e16b21e4f6a114f0408b4ce1a93e051659201d51e17d38787db0829"
+      },
+      {
+        "x": 9,
+        "y": 5,
+        "width": 1024,
+        "height": 724,
+        "path": "pages/9-5.bin",
+        "byte_length": 741376,
+        "sha256": "9c551e7ebf0bc170a4b4b91534c70bf0072b9076fd382702708fca546a33faa2"
+      },
+      {
+        "x": 10,
+        "y": 5,
+        "width": 1024,
+        "height": 724,
+        "path": "pages/10-5.bin",
+        "byte_length": 741376,
+        "sha256": "60c8abbaf9c0ed5d8e7fd91fd4dad0635e0d71b3607402e89f625de9f772c955"
+      },
+      {
+        "x": 11,
+        "y": 5,
+        "width": 1024,
+        "height": 724,
+        "path": "pages/11-5.bin",
+        "byte_length": 741376,
+        "sha256": "d1059ce7874c02869a1e97b5166fdcd243b5bd86ba0359c360c332e54f3f7264"
+      },
+      {
+        "x": 12,
+        "y": 5,
+        "width": 36,
+        "height": 724,
+        "path": "pages/12-5.bin",
+        "byte_length": 26064,
+        "sha256": "1d5c397b6516ada03ca84a5d7cca9c816e4c761a655f4c7c102de4097f7ac842"
+      }
+    ]
+  },
+  "map16x": {
+    "width": 3081,
+    "height": 1461,
+    "num_land_tiles": 1270595
+  },
+  "map4x": {
+    "width": 6162,
+    "height": 2922,
+    "num_land_tiles": 5197560
+  },
+  "multiplayer_frequency": 0,
+  "name": "Expanded Earth XL",
+  "nations": [
+    {
+      "coordinates": [6927, 1605],
+      "flag": "tr",
+      "name": "Türkiye"
+    },
+    {
+      "coordinates": [6150, 1185],
+      "flag": "de",
+      "name": "Germany"
+    },
+    {
+      "coordinates": [5898, 1326],
+      "flag": "fr",
+      "name": "France"
+    },
+    {
+      "coordinates": [5616, 1584],
+      "flag": "es",
+      "name": "Spain"
+    },
+    {
+      "coordinates": [6222, 1494],
+      "flag": "it",
+      "name": "Italy"
+    },
+    {
+      "coordinates": [5736, 1137],
+      "flag": "gb",
+      "name": "United Kingdom"
+    },
+    {
+      "coordinates": [5523, 1119],
+      "flag": "ie",
+      "name": "Ireland"
+    },
+    {
+      "coordinates": [6459, 1134],
+      "flag": "pl",
+      "name": "Poland"
+    },
+    {
+      "coordinates": [6534, 1617],
+      "flag": "gr",
+      "name": "Greece"
+    },
+    {
+      "coordinates": [6666, 1479],
+      "flag": "bg",
+      "name": "Bulgaria"
+    },
+    {
+      "coordinates": [6405, 1443],
+      "flag": "rs",
+      "name": "Serbia"
+    },
+    {
+      "coordinates": [6726, 1383],
+      "flag": "ro",
+      "name": "Romania"
+    },
+    {
+      "coordinates": [6489, 1323],
+      "flag": "hu",
+      "name": "Hungary"
+    },
+    {
+      "coordinates": [6816, 1254],
+      "flag": "ua",
+      "name": "Ukraine"
+    },
+    {
+      "coordinates": [6279, 891],
+      "flag": "se",
+      "name": "Sweden"
+    },
+    {
+      "coordinates": [6081, 846],
+      "flag": "no",
+      "name": "Norway"
+    },
+    {
+      "coordinates": [6573, 582],
+      "flag": "Sami flag",
+      "name": "Sápmi"
+    },
+    {
+      "coordinates": [6618, 786],
+      "flag": "fi",
+      "name": "Finland"
+    },
+    {
+      "coordinates": [7128, 1089],
+      "flag": "ru",
+      "name": "Russia"
+    },
+    {
+      "coordinates": [6666, 1113],
+      "flag": "by",
+      "name": "Belarus"
+    },
+    {
+      "coordinates": [7323, 1521],
+      "flag": "ge",
+      "name": "Georgia"
+    },
+    {
+      "coordinates": [7206, 1740],
+      "flag": "iq",
+      "name": "Iraq"
+    },
+    {
+      "coordinates": [7059, 1785],
+      "flag": "sy",
+      "name": "Syria"
+    },
+    {
+      "coordinates": [7242, 2037],
+      "flag": "sa",
+      "name": "Saudi Arabia"
+    },
+    {
+      "coordinates": [7368, 2460],
+      "flag": "ye",
+      "name": "Yemen"
+    },
+    {
+      "coordinates": [7662, 2172],
+      "flag": "ae",
+      "name": "United Arab Emirates"
+    },
+    {
+      "coordinates": [7596, 1827],
+      "flag": "ir",
+      "name": "Iran"
+    },
+    {
+      "coordinates": [8049, 1950],
+      "flag": "pk",
+      "name": "Pakistan"
+    },
+    {
+      "coordinates": [7962, 1740],
+      "flag": "af",
+      "name": "Afghanistan"
+    },
+    {
+      "coordinates": [8181, 1248],
+      "flag": "kz",
+      "name": "Kazakhstan"
+    },
+    {
+      "coordinates": [7668, 1632],
+      "flag": "tm",
+      "name": "Turkmenistan"
+    },
+    {
+      "coordinates": [9765, 834],
+      "flag": "Siberia",
+      "name": "Siberia"
+    },
+    {
+      "coordinates": [8430, 2232],
+      "flag": "in",
+      "name": "India"
+    },
+    {
+      "coordinates": [5151, 711],
+      "flag": "is",
+      "name": "Iceland"
+    },
+    {
+      "coordinates": [8832, 2127],
+      "flag": "bd",
+      "name": "Bangladesh"
+    },
+    {
+      "coordinates": [8610, 1968],
+      "flag": "np",
+      "name": "Nepal"
+    },
+    {
+      "coordinates": [9516, 1872],
+      "flag": "cn",
+      "name": "China"
+    },
+    {
+      "coordinates": [10119, 1563],
+      "flag": "kp",
+      "name": "North Korea"
+    },
+    {
+      "coordinates": [10167, 1719],
+      "flag": "kr",
+      "name": "South Korea"
+    },
+    {
+      "coordinates": [10545, 1713],
+      "flag": "jp",
+      "name": "Japan"
+    },
+    {
+      "coordinates": [9078, 1371],
+      "flag": "mn",
+      "name": "Mongolia"
+    },
+    {
+      "coordinates": [9687, 2985],
+      "flag": "id",
+      "name": "Indonesia"
+    },
+    {
+      "coordinates": [9435, 2406],
+      "flag": "vn",
+      "name": "Vietnam"
+    },
+    {
+      "coordinates": [9060, 2250],
+      "flag": "mm",
+      "name": "Myanmar"
+    },
+    {
+      "coordinates": [9246, 2466],
+      "flag": "th",
+      "name": "Thailand"
+    },
+    {
+      "coordinates": [10614, 3201],
+      "flag": "pg",
+      "name": "Papua New Guinea"
+    },
+    {
+      "coordinates": [10710, 4176],
+      "flag": "au",
+      "name": "Australia"
+    },
+    {
+      "coordinates": [10248, 3639],
+      "flag": "Australian Aboriginal Flag",
+      "name": "Nawan-mirri"
+    },
+    {
+      "coordinates": [11640, 4563],
+      "flag": "nz",
+      "name": "New Zealand"
+    },
+    {
+      "coordinates": [7896, 5679],
+      "flag": "aq",
+      "name": "Antarctica"
+    },
+    {
+      "coordinates": [6114, 1770],
+      "flag": "tn",
+      "name": "Tunisia"
+    },
+    {
+      "coordinates": [6414, 2025],
+      "flag": "ly",
+      "name": "Libya"
+    },
+    {
+      "coordinates": [6843, 1959],
+      "flag": "eg",
+      "name": "Egypt"
+    },
+    {
+      "coordinates": [5577, 1839],
+      "flag": "ma",
+      "name": "Morocco"
+    },
+    {
+      "coordinates": [5856, 2013],
+      "flag": "dz",
+      "name": "Algeria"
+    },
+    {
+      "coordinates": [6813, 2364],
+      "flag": "sd",
+      "name": "Sudan"
+    },
+    {
+      "coordinates": [7398, 2754],
+      "flag": "so",
+      "name": "Somalia"
+    },
+    {
+      "coordinates": [7056, 2685],
+      "flag": "et",
+      "name": "Ethiopia"
+    },
+    {
+      "coordinates": [5370, 2187],
+      "flag": "mr",
+      "name": "Mauritania"
+    },
+    {
+      "coordinates": [6354, 2304],
+      "flag": "td",
+      "name": "Chad"
+    },
+    {
+      "coordinates": [6027, 2430],
+      "flag": "ne",
+      "name": "Niger"
+    },
+    {
+      "coordinates": [5988, 2727],
+      "flag": "ng",
+      "name": "Nigeria"
+    },
+    {
+      "coordinates": [5415, 2721],
+      "flag": "lr",
+      "name": "Liberia"
+    },
+    {
+      "coordinates": [6585, 2754],
+      "flag": "cf",
+      "name": "Central African Republic"
+    },
+    {
+      "coordinates": [6591, 3210],
+      "flag": "cd",
+      "name": "DR Congo"
+    },
+    {
+      "coordinates": [6633, 4167],
+      "flag": "za",
+      "name": "South Africa"
+    },
+    {
+      "coordinates": [7356, 3741],
+      "flag": "mg",
+      "name": "Madagascar"
+    },
+    {
+      "coordinates": [7068, 3495],
+      "flag": "mz",
+      "name": "Mozambique"
+    },
+    {
+      "coordinates": [7104, 3096],
+      "flag": "tz",
+      "name": "Tanzania"
+    },
+    {
+      "coordinates": [5682, 2367],
+      "flag": "ml",
+      "name": "Mali"
+    },
+    {
+      "coordinates": [6384, 3876],
+      "flag": "na",
+      "name": "Namibia"
+    },
+    {
+      "coordinates": [6297, 3534],
+      "flag": "ao",
+      "name": "Angola"
+    },
+    {
+      "coordinates": [4254, 3501],
+      "flag": "br",
+      "name": "Brazil"
+    },
+    {
+      "coordinates": [3675, 3195],
+      "flag": "amazonas",
+      "name": "Amazonas"
+    },
+    {
+      "coordinates": [3729, 4284],
+      "flag": "ar",
+      "name": "Argentina"
+    },
+    {
+      "coordinates": [3375, 4068],
+      "flag": "cl",
+      "name": "Chile"
+    },
+    {
+      "coordinates": [3192, 3333],
+      "flag": "pe",
+      "name": "Peru"
+    },
+    {
+      "coordinates": [3249, 2814],
+      "flag": "co",
+      "name": "Colombia"
+    },
+    {
+      "coordinates": [3549, 2763],
+      "flag": "ve",
+      "name": "Venezuela"
+    },
+    {
+      "coordinates": [2739, 2499],
+      "flag": "ni",
+      "name": "Nicaragua"
+    },
+    {
+      "coordinates": [2292, 2229],
+      "flag": "mx",
+      "name": "Mexico"
+    },
+    {
+      "coordinates": [3102, 1668],
+      "flag": "us",
+      "name": "United States"
+    },
+    {
+      "coordinates": [2298, 1869],
+      "flag": "Texas",
+      "name": "Texas"
+    },
+    {
+      "coordinates": [1653, 1692],
+      "flag": "California",
+      "name": "California"
+    },
+    {
+      "coordinates": [1962, 1590],
+      "flag": "Utah",
+      "name": "Utah"
+    },
+    {
+      "coordinates": [3237, 1155],
+      "flag": "Quebec",
+      "name": "Quebec"
+    },
+    {
+      "coordinates": [3633, 1092],
+      "flag": "newfoundlandandlabrador",
+      "name": "Newfoundland and Labrador"
+    },
+    {
+      "coordinates": [2871, 1218],
+      "flag": "ca",
+      "name": "Canada"
+    },
+    {
+      "coordinates": [510, 732],
+      "flag": "Alaska",
+      "name": "Alaska"
+    },
+    {
+      "coordinates": [2571, 696],
+      "flag": "Nunavut",
+      "name": "Nunavut"
+    },
+    {
+      "coordinates": [1425, 762],
+      "flag": "Yukon",
+      "name": "Yukon"
+    },
+    {
+      "coordinates": [4344, 411],
+      "flag": "gl",
+      "name": "Greenland"
+    },
+    {
+      "coordinates": [6741, 3687],
+      "flag": "zw",
+      "name": "Zimbabwe"
+    },
+    {
+      "coordinates": [1650, 1314],
+      "flag": "Washington",
+      "name": "Washington"
+    },
+    {
+      "coordinates": [2334, 1554],
+      "flag": "Kansas",
+      "name": "Kansas"
+    },
+    {
+      "coordinates": [2736, 1839],
+      "flag": "Mississippi",
+      "name": "Mississippi"
+    },
+    {
+      "coordinates": [3624, 3657],
+      "flag": "bo",
+      "name": "Bolivia"
+    },
+    {
+      "coordinates": [6177, 3045],
+      "flag": "ga",
+      "name": "Gabon"
+    },
+    {
+      "coordinates": [2067, 1311],
+      "flag": "Montana",
+      "name": "Montana"
+    },
+    {
+      "coordinates": [1551, 1071],
+      "flag": "britishcolumbia",
+      "name": "British Columbia"
+    },
+    {
+      "coordinates": [1854, 1074],
+      "flag": "alberta",
+      "name": "Alberta"
+    },
+    {
+      "coordinates": [2196, 1080],
+      "flag": "saskatchewan",
+      "name": "Saskatchewan"
+    },
+    {
+      "coordinates": [2502, 1101],
+      "flag": "manitoba",
+      "name": "Manitoba"
+    },
+    {
+      "coordinates": [3324, 1500],
+      "flag": "Massachusetts",
+      "name": "Massachusetts"
+    },
+    {
+      "coordinates": [2535, 1395],
+      "flag": "Minnesota",
+      "name": "Minnesota"
+    },
+    {
+      "coordinates": [2880, 1500],
+      "flag": "Michigan",
+      "name": "Michigan"
+    },
+    {
+      "coordinates": [1965, 741],
+      "flag": "northwestterritories",
+      "name": "Northwest Territories"
+    }
+  ],
+  "translation_key": "map.expandedgiantworldlarge",
+  "additionalNations": []
+}

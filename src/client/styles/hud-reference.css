@@ -1,0 +1,51 @@
+/* Review controls are never mounted in a match. All HUD styles are production. */
+body.atlas-hud-reference-active {
+  overflow: hidden;
+}
+body.atlas-hud-reference-active[data-reference-safe-area="iphone"] {
+  --native-safe-top: 59px;
+  --native-safe-bottom: 34px;
+}
+body.atlas-hud-reference-active
+  > :not(atlas-hud-reference, atlas-game-hud, idlefront-developer-menu) {
+  display: none !important;
+}
+.atlas-hud-reference__map {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+  z-index: -1;
+}
+.atlas-hud-reference__tools {
+  position: fixed;
+  z-index: 180;
+  top: 46%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: max-content;
+  max-width: calc(100% - 24px);
+  padding: 8px;
+  border: 1px solid #776748;
+  border-radius: 12px;
+  background: var(--atlas-hud-surface);
+  background-size:
+    auto,
+    192px 192px,
+    auto;
+  background-blend-mode: normal, soft-light, normal;
+  box-shadow: var(--atlas-hud-shadow);
+  color: #f2e8d0;
+  text-align: center;
+  font: 500 12px/1.4 var(--war-font);
+}
+.atlas-hud-reference__tools > span {
+  display: block;
+  padding: 2px 8px 4px;
+}
+.atlas-hud-reference__tools > div {
+  display: flex;
+  justify-content: center;
+}

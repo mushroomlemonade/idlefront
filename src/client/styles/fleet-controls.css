@@ -1,0 +1,107 @@
+fleet-target-slider .fleet-control-region {
+  padding: 6px 8px;
+  margin: 4px 0;
+  min-width: 0;
+  border: 1px solid var(--atlas-line, #65726866);
+  border-radius: 8px;
+  background: var(--atlas-surface, #09151066);
+  box-shadow: inset 0 1px 3px #0007;
+}
+fleet-target-slider .fleet-control-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 11px;
+}
+fleet-target-slider .fleet-control-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 138px;
+  align-items: center;
+  gap: 8px;
+}
+fleet-target-slider .fleet-control-grid .atlas-ratio-heading {
+  display: none;
+}
+fleet-target-slider .atlas-ratio-bar-value.is-paired {
+  padding: 0 6px;
+  font-size: 10px;
+}
+fleet-target-slider .fleet-status {
+  display: block;
+  font-size: 10px;
+  line-height: 14px;
+  color: var(--atlas-text-muted, #b7c1b9);
+}
+fleet-target-slider .fleet-mode-switch::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc((100% - 6px) / 3);
+  border-radius: 4px;
+  background: linear-gradient(#e1e5da, #a2b0a9 48%, #75867d 52%, #a8b5ac);
+  box-shadow:
+    inset 0 1px #ffffffe0,
+    inset 0 0 0 1px #aebcaf,
+    0 1px 3px #000c;
+  transform: translateX(calc(var(--fleet-mode-position) * 100%));
+  transition: transform 180ms ease-out;
+  pointer-events: none;
+}
+fleet-target-slider .fleet-mode-switch.is-dragging::before {
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  fleet-target-slider .fleet-mode-switch::before {
+    transition: none;
+  }
+}
+@media (max-width: 340px) {
+  fleet-target-slider .fleet-control-grid {
+    grid-template-columns: minmax(0, 1fr) 120px;
+    gap: 4px;
+  }
+}
+fleet-target-slider .fleet-mode-switch {
+  display: flex;
+  position: relative;
+  touch-action: none;
+  user-select: none;
+  padding: 3px;
+  margin: 4px 0;
+  border: 1px solid #060c09;
+  border-radius: 7px;
+  background: linear-gradient(#090f0c, #26312b);
+  box-shadow:
+    inset 0 2px 4px #000c,
+    0 1px 0 #ffffff24;
+}
+fleet-target-slider .fleet-mode-switch button {
+  position: relative;
+  flex: 1;
+  min-height: 36px;
+  min-width: 0;
+  padding: 4px 1px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: #b9c1b8;
+  font-size: 11px;
+  text-shadow: 0 -1px #000;
+}
+fleet-target-slider .fleet-mode-switch button[aria-pressed="true"] {
+  background: transparent;
+  color: #15231c;
+  border-color: transparent;
+  box-shadow: none;
+  text-shadow: 0 1px #ffffff80;
+}
+fleet-target-slider .fleet-mode-switch button:focus-visible {
+  outline: 2px solid #dfc780;
+  outline-offset: 2px;
+}
+fleet-target-slider .atlas-ratio-heading output {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}

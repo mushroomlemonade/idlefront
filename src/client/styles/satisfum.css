@@ -1,0 +1,1690 @@
+/*
+ * IdleFront "Satisfum" material pass.
+ *
+ * This is deliberately the last application stylesheet. It resolves the
+ * remaining flat utility-class surfaces into one shared stone vocabulary
+ * without touching the OpenFront canvas or its bilinear render pipeline.
+ * Every photographic layer below reuses one of five browser-cached images;
+ * components do not allocate their own texture maps.
+ */
+
+:root {
+  --sf-quartz: url("/images/ui/materials/stones/quartz.webp");
+  /* v0.11 restraint pass: ordinary surfaces read as navigation hardware,
+   * not gemstones. Quartz remains available for the occasional pale marble
+   * slab; the other named tokens are quiet, texture-free material tones. */
+  --sf-obsidian: linear-gradient(145deg, #303938, #171d1c 68%);
+  --sf-amethyst: linear-gradient(145deg, #72828d, #3d4b54 68%);
+  --sf-ruby: linear-gradient(145deg, #a7655f, #663e3c 68%);
+  --sf-emerald: linear-gradient(145deg, #91b8ab, #476f63 68%);
+
+  --sf-emerald-ink: #071a15;
+  --sf-quartz-ink: #181a1c;
+  --sf-obsidian-ink: #f4f3ec;
+  --sf-ruby-ink: #fff6f4;
+  --sf-amethyst-ink: #fff8ff;
+  --sf-gold: #e4bd6a;
+  --sf-gold-bright: #ffe9a7;
+  --sf-edge-dark: #080a09;
+
+  --sf-panel-face:
+    linear-gradient(
+      155deg,
+      rgb(255 255 255 / 0.13),
+      transparent 19% 72%,
+      rgb(0 0 0 / 0.34)
+    ),
+    radial-gradient(
+      ellipse at 48% -14%,
+      rgb(142 225 194 / 0.11),
+      transparent 43%
+    ),
+    linear-gradient(145deg, #283230, #151c1a);
+  --sf-panel-inset:
+    linear-gradient(180deg, rgb(0 0 0 / 0.34), transparent 38%),
+    linear-gradient(180deg, #121918, #202927);
+  --sf-field-face:
+    linear-gradient(180deg, rgb(0 0 0 / 0.22), transparent 38%),
+    linear-gradient(100deg, rgb(255 255 255 / 0.24), transparent 42%),
+    var(--sf-quartz), #d8d9d2;
+  --sf-panel-size: auto;
+  --sf-control-size: 720px 480px;
+  --sf-panel-shadow:
+    inset 0 1px rgb(255 255 255 / 0.17), inset 0 -1px rgb(0 0 0 / 0.85),
+    inset 0 0 24px rgb(0 0 0 / 0.34), 0 8px 22px rgb(0 0 0 / 0.36);
+  --sf-inset-shadow:
+    inset 0 3px 9px rgb(0 0 0 / 0.72), inset 0 -1px rgb(255 255 255 / 0.12),
+    0 1px rgb(255 239 193 / 0.11);
+}
+
+body.atlas-theme {
+  --war-ink: #090d0c;
+  --war-ink-soft: #121a17;
+  --war-mahogany: #261411;
+  --war-mahogany-deep: #110807;
+  --war-felt: #08382c;
+  --war-felt-deep: #041d17;
+  --war-brass: var(--sf-gold);
+  --war-brass-light: var(--sf-gold-bright);
+  --war-green: #72d8b0;
+  --war-red: #ef897d;
+  --war-blue: #93cbd0;
+  --war-gold-text: #ffe59a;
+  --atlas-accent: #64bea2;
+  --atlas-accent-strong: #a0ead0;
+  --atlas-text: #fbf6e9;
+  --atlas-text-muted: #d5cdb8;
+  --atlas-line: rgb(255 231 174 / 0.18);
+  --atlas-line-strong: rgb(255 231 174 / 0.42);
+  --war-mahogany-texture: linear-gradient(145deg, #2a302f, #161b1a);
+  --war-felt-texture: linear-gradient(145deg, #243b36, #122520);
+  --war-leather-texture: linear-gradient(145deg, #303634, #1c2220);
+  /* Retain the real paper grain: it remains quiet enough to support copy. */
+  --war-parchment-texture: url("/resources/images/ui/materials/parchment@4x.webp");
+}
+
+/* ------------------------------------------------------------------------ */
+/* Shared carved control face                                                */
+/* ------------------------------------------------------------------------ */
+
+:where(.atlas-war-button, .atlas-action-button),
+body.atlas-theme :where(.start-game-button, o-button button) {
+  --war-control-texture: var(--sf-emerald);
+  --war-control-face: linear-gradient(
+    180deg,
+    rgb(232 255 246 / 0.78),
+    rgb(87 186 146 / 0.62) 34%,
+    rgb(14 68 51 / 0.76) 50%,
+    rgb(51 143 109 / 0.68) 72%,
+    rgb(204 255 232 / 0.72)
+  );
+  --war-control-inclusions: var(--war-gem-amethyst-inclusions);
+  --war-control-border: #2b6653;
+  --war-control-lip: #123e30;
+  --war-control-ink: var(--sf-emerald-ink);
+  --war-control-print-dark: rgb(2 30 21 / 0.3);
+  --war-control-print-light: rgb(225 255 242 / 0.7);
+}
+
+:where(.atlas-war-button, .atlas-action-button)::after,
+body.atlas-theme :where(.start-game-button, o-button button)::after {
+  background-image:
+    linear-gradient(
+      112deg,
+      transparent 8% 37%,
+      rgb(255 255 255 / 0.13) 38%,
+      transparent 39% 71%,
+      rgb(0 0 0 / 0.13) 72%,
+      transparent 74%
+    ),
+    var(--war-control-texture), var(--war-control-inclusions),
+    var(--war-leather-texture) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    var(--sf-control-size),
+    auto,
+    184px 184px !important;
+  background-blend-mode: screen, normal, screen, soft-light !important;
+  opacity: 0.58 !important;
+}
+
+:where(.atlas-war-button--secondary),
+body.atlas-theme
+  o-button
+  button:is([data-variant="secondary"], [data-variant="ghost"]) {
+  --war-control-texture: var(--sf-quartz);
+  --war-control-face: var(--war-gem-quartz-face);
+  --war-control-inclusions: var(--war-gem-quartz-inclusions);
+  --war-control-border: #77787b;
+  --war-control-lip: #3c4041;
+  --war-control-ink: var(--sf-quartz-ink);
+}
+
+:where(.atlas-war-button--danger),
+body.atlas-theme o-button button[data-variant="danger"] {
+  --war-control-texture: var(--sf-ruby);
+  --war-control-face: var(--war-gem-ruby-face);
+  --war-control-inclusions: var(--war-gem-ruby-inclusions);
+  --war-control-border: #761329;
+  --war-control-lip: #3c0612;
+  --war-control-ink: var(--sf-ruby-ink);
+}
+
+body.atlas-theme o-button button[data-variant="warning"] {
+  --war-control-texture: var(--sf-amethyst);
+  --war-control-face: var(--war-gem-amethyst-face);
+  --war-control-inclusions: var(--war-gem-amethyst-inclusions);
+  --war-control-border: #56326f;
+  --war-control-lip: #291538;
+  --war-control-ink: var(--sf-amethyst-ink);
+}
+
+/* Explicit specimens always win over their semantic default. */
+.atlas-war-button[data-stone="quartz"] {
+  --war-control-texture: var(--sf-quartz);
+}
+.atlas-war-button[data-stone="obsidian"] {
+  --war-control-texture: var(--sf-obsidian);
+}
+.atlas-war-button[data-stone="amethyst"] {
+  --war-control-texture: var(--sf-amethyst);
+}
+.atlas-war-button[data-stone="ruby"] {
+  --war-control-texture: var(--sf-ruby);
+}
+.atlas-war-button[data-stone="emerald"] {
+  --war-control-texture: var(--sf-emerald);
+}
+
+/* The title-screen call to action keeps its physical press construction but
+ * uses a restrained navigation-blue face instead of a gemstone slab. */
+.atlas-quick-play {
+  --sf-quick-stone: none;
+  border-color: #657b7d !important;
+  background-image:
+    radial-gradient(
+      ellipse at 48% -5%,
+      rgb(255 255 255 / 0.34),
+      transparent 48%
+    ),
+    linear-gradient(180deg, #819698, #566c70 48%, #344c50 52%, #657c7f) !important;
+}
+
+.atlas-quick-play::after {
+  background-image:
+    linear-gradient(
+      112deg,
+      transparent 12% 43%,
+      rgb(255 255 255 / 0.12) 44%,
+      transparent 45% 76%,
+      rgb(26 3 40 / 0.14) 77%,
+      transparent 79%
+    ),
+    linear-gradient(180deg, rgb(255 255 255 / 0.14), transparent 42%) !important;
+  background-size: auto !important;
+  background-blend-mode: screen !important;
+  opacity: 0.42 !important;
+}
+
+/* Title composition: one restrained obsidian instrument case, one inset
+ * emerald nameplate, one quiet control recess, one amethyst action. */
+body.atlas-theme .atlas-title-stage .atlas-launch-console {
+  border-color: rgb(224 193 126 / 0.58) !important;
+  background-color: #0f1513 !important;
+  background-image:
+    linear-gradient(
+      155deg,
+      rgb(255 255 255 / 0.12),
+      transparent 20% 76%,
+      rgb(0 0 0 / 0.3)
+    ),
+    linear-gradient(rgb(3 8 6 / 0.35), rgb(3 8 6 / 0.35)), var(--sf-obsidian),
+    var(--war-leather-texture) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    auto,
+    720px 480px,
+    184px 184px !important;
+  background-blend-mode: screen, normal, normal, soft-light !important;
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 0.15),
+    inset 0 -2px 7px rgb(0 0 0 / 0.7),
+    0 2px 0 #100c08,
+    0 14px 34px rgb(0 0 0 / 0.46) !important;
+}
+
+body.atlas-theme .atlas-title-stage .atlas-app-identity {
+  border: 1px solid rgb(129 206 176 / 0.33);
+  border-radius: 12px;
+  background-color: #0a392b;
+  background-image:
+    radial-gradient(
+      ellipse at 50% -16%,
+      rgb(226 255 244 / 0.25),
+      transparent 45%
+    ),
+    linear-gradient(rgb(3 36 25 / 0.32), rgb(3 36 25 / 0.32)),
+    var(--sf-emerald), var(--war-leather-texture);
+  background-position: center;
+  background-size:
+    auto,
+    auto,
+    720px 480px,
+    184px 184px;
+  background-blend-mode: screen, normal, normal, soft-light;
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 0.2),
+    inset 0 -8px 18px rgb(0 0 0 / 0.34),
+    0 2px 6px rgb(0 0 0 / 0.34);
+}
+
+body.atlas-theme .atlas-title-stage .atlas-identity-card {
+  border-color: rgb(222 195 138 / 0.28) !important;
+  background-color: #111613 !important;
+  background-image:
+    linear-gradient(
+      155deg,
+      rgb(255 255 255 / 0.09),
+      transparent 26% 72%,
+      rgb(0 0 0 / 0.3)
+    ),
+    linear-gradient(rgb(4 9 7 / 0.48), rgb(4 9 7 / 0.48)), var(--sf-obsidian),
+    var(--war-leather-texture) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    auto,
+    720px 480px,
+    184px 184px !important;
+  background-blend-mode: screen, normal, normal, soft-light !important;
+  box-shadow:
+    inset 0 2px 7px rgb(0 0 0 / 0.54),
+    inset 0 -1px rgb(255 255 255 / 0.1),
+    0 1px rgb(255 231 171 / 0.12) !important;
+}
+
+/* Persistent-world controls: preserve the existing proven press mechanics,
+ * replace only the face material. */
+.pw-button,
+.pw-icon-button,
+.pw-header-action {
+  --pw-stone-texture: var(--sf-amethyst);
+}
+
+.pw-button::after,
+.pw-icon-button::after,
+.pw-header-action::after {
+  background-image:
+    linear-gradient(
+      111deg,
+      transparent 10% 38%,
+      rgb(255 255 255 / 0.13) 39%,
+      transparent 40% 72%,
+      rgb(0 0 0 / 0.14) 73%,
+      transparent 75%
+    ),
+    var(--pw-stone-texture),
+    var(
+      --pw-gem-inclusions,
+      var(--pw-header-gem-inclusions, var(--war-gem-quartz-inclusions))
+    ),
+    var(--war-leather-texture) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    var(--sf-control-size),
+    auto,
+    184px 184px !important;
+  background-blend-mode: screen, normal, screen, soft-light !important;
+  opacity: 0.58 !important;
+}
+
+.pw-button--primary {
+  --pw-stone-texture: var(--sf-emerald);
+}
+.pw-button--secondary,
+.pw-icon-button,
+.pw-header-action--quiet {
+  --pw-stone-texture: var(--sf-quartz);
+}
+.pw-button--danger {
+  --pw-stone-texture: var(--sf-ruby);
+}
+.pw-button--share,
+.pw-header-action:not(.pw-header-action--quiet) {
+  --pw-stone-texture: var(--sf-amethyst);
+}
+
+.pw-button--primary {
+  --pw-gem-face: linear-gradient(
+    180deg,
+    #dcfff1,
+    #68cba6 22%,
+    #1b795d 47%,
+    #0a3b2d 50%,
+    #2b9c77 74%,
+    #caffea
+  );
+  --pw-gem-inclusions: var(--war-gem-amethyst-inclusions);
+  --pw-gem-border: #2f745d;
+  --pw-gem-lip: #123d30;
+  --pw-gem-ink: #071b15;
+  --pw-gem-print-dark: rgb(1 37 25 / 0.28);
+  --pw-gem-print-light: rgb(229 255 244 / 0.72);
+}
+
+/* ------------------------------------------------------------------------ */
+/* Structural stone: panels, cards, menus and modal anatomy                  */
+/* ------------------------------------------------------------------------ */
+
+body.atlas-theme
+  :where(.atlas-material-glass, .atlas-material-chrome, .atlas-material-brass) {
+  background-image:
+    linear-gradient(
+      155deg,
+      rgb(255 255 255 / 0.24),
+      transparent 24% 72%,
+      rgb(0 0 0 / 0.26)
+    ),
+    var(--sf-quartz), var(--war-leather-texture) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    720px 480px,
+    184px 184px !important;
+  background-blend-mode: screen, normal, soft-light !important;
+}
+
+body.atlas-theme
+  :where(
+    .pw-app-header,
+    .atlas-launch-console,
+    .atlas-identity-card,
+    .atlas-lobby-card,
+    .atlas-navigation-drawer,
+    .atlas-dev-menu,
+    .atlas-legal-page,
+    .atlas-ui-lab__header,
+    .atlas-ui-lab__controls,
+    .atlas-ui-lab__gauges,
+    .atlas-modal-section
+  ),
+body.atlas-theme .modal-overlay > div,
+body.atlas-theme.in-game
+  :where(
+    .atlas-control-deck,
+    .atlas-top-command-surface,
+    .atlas-player-info-surface,
+    .atlas-action-notice,
+    .atlas-game-overview,
+    .atlas-match-actions,
+    .build-menu,
+    .column-picker-popover
+  ) {
+  background-image: var(--sf-panel-face) !important;
+  background-position: center !important;
+  background-size: var(--sf-panel-size) !important;
+  background-blend-mode: screen, screen, normal, soft-light, normal !important;
+  border-color: rgb(222 189 119 / 0.48) !important;
+  box-shadow: var(--sf-panel-shadow) !important;
+}
+
+/* The world header is light quartz so it still reads as system chrome, but
+ * close inspection now reveals the same mineral grain as every other piece. */
+body.atlas-theme .pw-app-header {
+  border-color: #6e706f !important;
+  background-color: #c9cbc6 !important;
+  background-image:
+    linear-gradient(
+      180deg,
+      rgb(255 255 255 / 0.58),
+      transparent 46%,
+      rgb(20 29 26 / 0.25)
+    ),
+    linear-gradient(
+      105deg,
+      rgb(255 255 255 / 0.18),
+      transparent 34% 72%,
+      rgb(73 41 81 / 0.1)
+    ),
+    var(--sf-quartz), var(--war-leather-texture) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    auto,
+    720px 480px,
+    184px 184px !important;
+  background-blend-mode: screen, screen, normal, soft-light !important;
+  color: #171d1a !important;
+  text-shadow: 0 1px rgb(255 255 255 / 0.68) !important;
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 0.75),
+    inset 0 -3px 7px rgb(0 0 0 / 0.28),
+    0 2px 0 #3d4642,
+    0 5px 14px rgb(0 0 0 / 0.34) !important;
+}
+
+body.atlas-theme
+  .pw-app-header
+  :where(
+    .pw-app-header__context,
+    .pw-app-header__context span,
+    .pw-app-header__context strong
+  ) {
+  color: #18201c !important;
+  text-shadow: 0 1px rgb(255 255 255 / 0.72) !important;
+}
+
+/* o-modal renders in shadow DOM, but its document stylesheet is copied from
+ * the global sheets. :host rules therefore receive this final material pass. */
+:host .atlas-modal-shell,
+:host .atlas-modal-section {
+  background-image: var(--sf-panel-face) !important;
+  background-position: center !important;
+  background-size: var(--sf-panel-size) !important;
+  background-blend-mode: screen, screen, normal, soft-light, normal !important;
+}
+
+:host .atlas-modal-shell {
+  border-color: rgb(229 193 119 / 0.62) !important;
+  box-shadow:
+    0 30px 100px rgb(0 0 0 / 0.72),
+    inset 0 1px rgb(255 255 255 / 0.18),
+    inset 0 0 44px rgb(0 0 0 / 0.46) !important;
+}
+
+:host .atlas-modal-tabs,
+body.atlas-theme .atlas-modal-tabs,
+body.atlas-theme .pw-segmented,
+body.atlas-theme .pw-lobby-tabs {
+  border: 1px solid rgb(255 255 255 / 0.14) !important;
+  background-image:
+    linear-gradient(180deg, rgb(255 255 255 / 0.16), transparent 44%),
+    var(--sf-obsidian), var(--war-leather-texture) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    720px 480px,
+    184px 184px !important;
+  background-blend-mode: screen, normal, soft-light !important;
+  box-shadow: var(--sf-inset-shadow) !important;
+}
+
+:host .atlas-modal-tab,
+body.atlas-theme .atlas-modal-tab,
+body.atlas-theme .pw-segmented button,
+body.atlas-theme .pw-lobby-tabs button {
+  color: rgb(246 242 231 / 0.68) !important;
+  text-shadow: 0 1px 2px #000 !important;
+}
+
+:host .atlas-modal-tab[aria-selected="true"],
+body.atlas-theme .atlas-modal-tab[aria-selected="true"],
+body.atlas-theme .pw-segmented button.is-active,
+body.atlas-theme .pw-lobby-tabs button.is-active {
+  background-image:
+    linear-gradient(180deg, rgb(255 255 255 / 0.22), transparent 48%),
+    var(--sf-amethyst) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    720px 480px !important;
+  color: #fff9ff !important;
+  box-shadow:
+    inset 0 2px 5px rgb(0 0 0 / 0.4),
+    inset 0 1px rgb(255 255 255 / 0.2) !important;
+}
+
+/* Dense settings and legacy content formerly used utility-only flat cards. */
+body.atlas-theme
+  :where(
+    setting-toggle > label,
+    setting-slider > div,
+    setting-select > div,
+    setting-number > div,
+    setting-keybind > div,
+    graphics-preset-selector > div,
+    toggle-input-card > div,
+    game-config-settings .rounded-xl,
+    .atlas-modal-section .bg-white\/5,
+    .atlas-modal-section .bg-gray-800,
+    .atlas-modal-section .bg-slate-800,
+    .atlas-modal-section .bg-slate-700\/50,
+    .atlas-modal-section .rounded-xl,
+    .atlas-modal-section .rounded-2xl
+  ) {
+  border-color: rgb(229 205 151 / 0.2) !important;
+  background-color: #111713 !important;
+  background-image:
+    linear-gradient(
+      155deg,
+      rgb(255 255 255 / 0.095),
+      transparent 22% 75%,
+      rgb(0 0 0 / 0.24)
+    ),
+    var(--sf-obsidian), var(--war-leather-texture) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    720px 480px,
+    184px 184px !important;
+  background-blend-mode: screen, normal, soft-light !important;
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 0.12),
+    inset 0 -1px rgb(0 0 0 / 0.78),
+    0 3px 9px rgb(0 0 0 / 0.2) !important;
+}
+
+body.atlas-theme
+  :where(
+    setting-toggle > label,
+    setting-slider > div,
+    setting-select > div,
+    setting-number > div,
+    setting-keybind > div
+  ):hover {
+  border-color: rgb(138 213 184 / 0.35) !important;
+  filter: brightness(1.045);
+}
+
+/* Persistent-world slabs use the same subsurface obsidian rather than
+ * unrelated felt/leather-only fills. Invitation cards stay brighter, but are
+ * now pale quartz instead of paper. */
+body.atlas-theme
+  .pw-app
+  :where(
+    .pw-panel,
+    .pw-choice-card,
+    .pw-schedule-card,
+    .pw-stepper-field,
+    .pw-schedule-confirmation,
+    .pw-review-grid > div,
+    .pw-empty-state,
+    .pw-alert,
+    .pw-disclosure,
+    .pw-world-list,
+    .pw-panel__header,
+    .pw-chat__composer,
+    .pw-chat__categories,
+    .pw-chat__phrases,
+    .pw-chat__preview,
+    .pw-lobby-actions,
+    .pw-runtime-state,
+    .pw-loading-caption,
+    .pw-chat-message,
+    .pw-reminder-option,
+    .pw-roster-row
+  ) {
+  background-color: #101612 !important;
+  background-image: var(--sf-panel-face) !important;
+  background-position: center !important;
+  background-size: var(--sf-panel-size) !important;
+  background-blend-mode: screen, screen, normal, soft-light, normal !important;
+}
+
+body.atlas-theme .pw-world-card {
+  background-color: #d9d8ce !important;
+  background-image:
+    linear-gradient(
+      155deg,
+      rgb(255 255 255 / 0.48),
+      transparent 22% 74%,
+      rgb(33 28 35 / 0.18)
+    ),
+    var(--sf-quartz), var(--war-parchment-texture) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    720px 480px,
+    256px 256px !important;
+  background-blend-mode: screen, normal, soft-light !important;
+  border-color: #7e756a !important;
+  color: #1d1c1a !important;
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 0.72),
+    inset 0 -2px 5px rgb(38 32 42 / 0.22),
+    0 5px 14px rgb(0 0 0 / 0.32) !important;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Gem-set fields, sliders, switches and compact controls                    */
+/* ------------------------------------------------------------------------ */
+
+body.atlas-theme
+  :where(
+    input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea,
+    [contenteditable="true"]
+  ) {
+  border: 1px solid #646568 !important;
+  background-color: #d8d9d2 !important;
+  background-image: var(--sf-field-face) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    auto,
+    720px 480px,
+    auto !important;
+  background-blend-mode: multiply, screen, normal, normal !important;
+  color: #171a18 !important;
+  text-shadow: 0 1px rgb(255 255 255 / 0.48) !important;
+  box-shadow:
+    inset 0 3px 8px rgb(8 10 9 / 0.34),
+    inset 0 -1px rgb(255 255 255 / 0.5),
+    0 1px rgb(255 246 213 / 0.13) !important;
+}
+
+body.atlas-theme :where(input, textarea)::placeholder {
+  color: rgb(28 31 29 / 0.48) !important;
+}
+
+body.atlas-theme input[type="range"] {
+  height: 18px !important;
+  overflow: visible;
+  appearance: none !important;
+  border: 1px solid #070a09 !important;
+  border-radius: 999px !important;
+  background-color: #0b100e !important;
+  background-image:
+    linear-gradient(
+      180deg,
+      rgb(0 0 0 / 0.58),
+      transparent 48%,
+      rgb(255 255 255 / 0.08)
+    ),
+    var(--sf-obsidian) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    720px 480px !important;
+  box-shadow:
+    inset 0 3px 6px rgb(0 0 0 / 0.88),
+    inset 0 -1px rgb(255 255 255 / 0.14),
+    0 1px rgb(255 239 192 / 0.12) !important;
+  cursor: ew-resize;
+}
+
+body.atlas-theme input[type="range"]::-webkit-slider-runnable-track {
+  height: 16px !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+}
+
+body.atlas-theme input[type="range"]::-moz-range-track {
+  height: 16px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+}
+
+body.atlas-theme input[type="range"]::-moz-range-progress {
+  height: 14px !important;
+  border-radius: 999px !important;
+  background:
+    linear-gradient(180deg, rgb(231 255 245 / 0.4), transparent 43%),
+    var(--sf-emerald) center / 720px 480px !important;
+  box-shadow: inset 0 1px rgb(255 255 255 / 0.3) !important;
+}
+
+body.atlas-theme input[type="range"]::-webkit-slider-thumb {
+  width: 28px !important;
+  height: 28px !important;
+  margin-top: -6px !important;
+  appearance: none !important;
+  border: 1px solid #707274 !important;
+  border-radius: 47% 53% 50% 46% !important;
+  background-color: #d9dad5 !important;
+  background-image:
+    radial-gradient(
+      circle at 36% 26%,
+      rgb(255 255 255 / 0.86) 0 5%,
+      transparent 7%
+    ),
+    linear-gradient(
+      145deg,
+      rgb(255 255 255 / 0.32),
+      transparent 38% 66%,
+      rgb(0 0 0 / 0.2)
+    ),
+    var(--sf-quartz) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    auto,
+    720px 480px !important;
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 0.75),
+    inset 0 -3px 5px rgb(0 0 0 / 0.24),
+    0 3px 7px rgb(0 0 0 / 0.6),
+    0 0 0 1px rgb(224 255 242 / 0.13) !important;
+  cursor: grab;
+  transition:
+    transform 160ms var(--war-spring),
+    filter 120ms ease,
+    box-shadow 160ms var(--war-ease) !important;
+}
+
+body.atlas-theme input[type="range"]::-moz-range-thumb {
+  width: 27px !important;
+  height: 27px !important;
+  border: 1px solid #707274 !important;
+  border-radius: 47% 53% 50% 46% !important;
+  background-color: #d9dad5 !important;
+  background-image:
+    radial-gradient(
+      circle at 36% 26%,
+      rgb(255 255 255 / 0.86) 0 5%,
+      transparent 7%
+    ),
+    linear-gradient(
+      145deg,
+      rgb(255 255 255 / 0.32),
+      transparent 38% 66%,
+      rgb(0 0 0 / 0.2)
+    ),
+    var(--sf-quartz) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    auto,
+    720px 480px !important;
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 0.75),
+    inset 0 -3px 5px rgb(0 0 0 / 0.24),
+    0 3px 7px rgb(0 0 0 / 0.6) !important;
+  cursor: grab;
+  transition:
+    transform 160ms var(--war-spring),
+    filter 120ms ease !important;
+}
+
+body.atlas-theme input[type="range"]:active::-webkit-slider-thumb {
+  filter: brightness(0.86);
+  transform: translateY(2px) scale(0.95);
+  cursor: grabbing;
+}
+
+body.atlas-theme input[type="range"]:active::-moz-range-thumb {
+  filter: brightness(0.86);
+  transform: translateY(2px) scale(0.95);
+  cursor: grabbing;
+}
+
+/* Settings switches: inset obsidian track, emerald/amethyst stone knob. */
+body.atlas-theme setting-toggle label > div:last-child > span {
+  border-color: rgb(255 255 255 / 0.16) !important;
+  background-color: #090d0c !important;
+  background-image:
+    linear-gradient(180deg, rgb(0 0 0 / 0.48), transparent 55%),
+    var(--sf-obsidian) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    720px 480px !important;
+  box-shadow: var(--sf-inset-shadow) !important;
+}
+
+body.atlas-theme setting-toggle label > div:last-child > span::before {
+  border: 1px solid #747578 !important;
+  background-color: #d9dad5 !important;
+  background-image:
+    radial-gradient(
+      circle at 36% 25%,
+      rgb(255 255 255 / 0.84),
+      transparent 21%
+    ),
+    var(--sf-quartz) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    720px 480px !important;
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 0.7),
+    inset 0 -2px 4px rgb(0 0 0 / 0.24),
+    0 2px 5px rgb(0 0 0 / 0.58) !important;
+}
+
+body.atlas-theme setting-toggle input:checked + span {
+  border-color: #3b7e67 !important;
+  background-image:
+    linear-gradient(180deg, rgb(0 0 0 / 0.2), transparent 55%),
+    var(--sf-emerald) !important;
+}
+
+body.atlas-theme setting-toggle input:checked + span::before {
+  border-color: #5b426e !important;
+  background-image:
+    radial-gradient(
+      circle at 36% 25%,
+      rgb(255 255 255 / 0.75),
+      transparent 21%
+    ),
+    var(--sf-amethyst) !important;
+}
+
+/* Small and legacy buttons receive the same physical face without acquiring
+ * new DOM overlays or changing their click logic. */
+body.atlas-theme
+  :where(
+    .atlas-modal-section
+      button:not(.atlas-o-button):not(.atlas-war-button):not(.atlas-modal-tab),
+    .modal-overlay button:not(.atlas-war-button):not(.atlas-action-button),
+    .pw-phrase-button,
+    .pw-chat__categories button,
+    .pw-stepper button,
+    .pw-text-button,
+    setting-keybind button,
+    .build-button,
+    .collapse-button,
+    .reset-button,
+    .copy-json-button
+  ) {
+  border-color: #5e6063 !important;
+  background-color: #cfd1cd !important;
+  background-image:
+    linear-gradient(
+      180deg,
+      rgb(255 255 255 / 0.5),
+      transparent 47%,
+      rgb(0 0 0 / 0.18)
+    ),
+    var(--sf-quartz), var(--war-leather-texture) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    720px 480px,
+    184px 184px !important;
+  background-blend-mode: screen, normal, soft-light !important;
+  color: var(--sf-quartz-ink) !important;
+  text-shadow: 0 1px rgb(255 255 255 / 0.65) !important;
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 0.72),
+    inset 0 -4px 7px rgb(0 0 0 / 0.2),
+    0 2px 0 #3d4142,
+    0 4px 9px rgb(0 0 0 / 0.32) !important;
+}
+
+/* A settings row is a labelled switch surface, not a primary action. The
+ * pale generic button treatment made its inherited helper copy unreadable;
+ * use quiet carved obsidian and reserve quartz for the close/launch pieces. */
+body.atlas-theme .atlas-settings-list button {
+  border: 1px solid rgb(226 206 160 / 0.22) !important;
+  border-bottom-width: 2px !important;
+  border-radius: 8px !important;
+  background-color: #111714 !important;
+  background-image:
+    linear-gradient(
+      155deg,
+      rgb(255 255 255 / 0.12),
+      transparent 24% 73%,
+      rgb(0 0 0 / 0.28)
+    ),
+    linear-gradient(rgb(5 10 8 / 0.48), rgb(5 10 8 / 0.48)), var(--sf-obsidian),
+    var(--war-leather-texture) !important;
+  background-position:
+    center,
+    center,
+    50% 50%,
+    center !important;
+  background-size:
+    auto,
+    auto,
+    720px 480px,
+    184px 184px !important;
+  background-blend-mode: screen, normal, normal, soft-light !important;
+  color: #f5f1e7 !important;
+  text-shadow: 0 1px 2px #000 !important;
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 0.14),
+    inset 0 -4px 7px rgb(0 0 0 / 0.34),
+    0 2px 0 #070a09,
+    0 4px 9px rgb(0 0 0 / 0.28) !important;
+}
+
+body.atlas-theme
+  .atlas-settings-list
+  button
+  :where(.text-slate-400, .text-white\/50) {
+  color: rgb(224 218 203 / 0.67) !important;
+}
+
+body.atlas-theme .atlas-settings-list button:hover:not(:disabled) {
+  border-color: rgb(121 203 172 / 0.44) !important;
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+body.atlas-theme .atlas-settings-list button:active:not(:disabled) {
+  filter: brightness(0.84);
+  box-shadow:
+    inset 0 5px 9px rgb(0 0 0 / 0.56),
+    inset 0 -1px rgb(255 255 255 / 0.1),
+    0 1px 2px rgb(0 0 0 / 0.38) !important;
+  transform: translateY(2px) scale(0.992);
+}
+
+body.atlas-theme .atlas-settings-list > .flex:not(button) {
+  border: 1px solid rgb(226 206 160 / 0.16);
+  border-radius: 8px;
+  background-image:
+    linear-gradient(
+      155deg,
+      rgb(255 255 255 / 0.07),
+      transparent 27% 74%,
+      rgb(0 0 0 / 0.2)
+    ),
+    linear-gradient(rgb(5 10 8 / 0.5), rgb(5 10 8 / 0.5)), var(--sf-obsidian),
+    var(--war-leather-texture);
+  background-position:
+    center,
+    center,
+    50% 50%,
+    center;
+  background-size:
+    auto,
+    auto,
+    720px 480px,
+    184px 184px;
+  background-blend-mode: screen, normal, normal, soft-light;
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 0.1),
+    inset 0 -1px rgb(0 0 0 / 0.72);
+}
+
+body.atlas-theme .atlas-settings-list > .border-t {
+  border-color: rgb(231 202 137 / 0.22) !important;
+}
+
+body.atlas-theme .atlas-settings-modal,
+body.atlas-theme .atlas-settings-header {
+  background-image:
+    linear-gradient(
+      155deg,
+      rgb(255 255 255 / 0.1),
+      transparent 24% 74%,
+      rgb(0 0 0 / 0.28)
+    ),
+    linear-gradient(rgb(5 10 8 / 0.42), rgb(5 10 8 / 0.42)), var(--sf-obsidian),
+    var(--war-leather-texture) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    auto,
+    720px 480px,
+    184px 184px !important;
+  background-blend-mode: screen, normal, normal, soft-light !important;
+}
+
+body.atlas-theme .atlas-settings-list > :nth-child(3n + 1) {
+  background-position:
+    center,
+    center,
+    18% 31%,
+    center !important;
+}
+
+body.atlas-theme .atlas-settings-list > :nth-child(3n + 2) {
+  background-position:
+    center,
+    center,
+    72% 58%,
+    center !important;
+}
+
+body.atlas-theme .atlas-settings-list > :nth-child(3n) {
+  background-position:
+    center,
+    center,
+    43% 77%,
+    center !important;
+}
+
+body.atlas-theme .atlas-settings-header {
+  border-color: rgb(232 205 144 / 0.24) !important;
+  box-shadow: inset 0 -1px rgb(0 0 0 / 0.7);
+}
+
+body.atlas-theme .atlas-settings-header > button {
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  border-color: #6f7173 !important;
+  background-color: #d4d5d1 !important;
+  background-image:
+    radial-gradient(
+      circle at 36% 24%,
+      rgb(255 255 255 / 0.72),
+      transparent 26%
+    ),
+    linear-gradient(
+      145deg,
+      rgb(255 255 255 / 0.3),
+      transparent 43% 70%,
+      rgb(0 0 0 / 0.19)
+    ),
+    var(--sf-quartz) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    auto,
+    720px 480px !important;
+  color: #191c1b !important;
+  text-shadow: 0 1px rgb(255 255 255 / 0.68) !important;
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 0.74),
+    inset 0 -3px 5px rgb(0 0 0 / 0.24),
+    0 2px 4px rgb(0 0 0 / 0.46) !important;
+}
+
+body.atlas-theme .atlas-settings-list button > div:last-child:not(.flex-1) {
+  min-width: 2.25rem;
+  border: 1px solid rgb(204 183 222 / 0.28);
+  border-radius: 999px;
+  background-image:
+    linear-gradient(180deg, rgb(255 255 255 / 0.2), transparent 56%),
+    linear-gradient(rgb(27 12 37 / 0.36), rgb(27 12 37 / 0.36)),
+    var(--sf-amethyst);
+  background-position: center;
+  background-size:
+    auto,
+    auto,
+    720px 480px;
+  color: #f7ecff !important;
+  padding: 0.18rem 0.4rem;
+  text-align: center;
+  text-shadow: 0 1px 2px #13071c !important;
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 0.18),
+    inset 0 -2px 4px rgb(0 0 0 / 0.28);
+}
+
+body.atlas-theme .atlas-settings-list button.text-red-400 {
+  border-color: rgb(209 74 91 / 0.46) !important;
+  background-image:
+    linear-gradient(
+      155deg,
+      rgb(255 255 255 / 0.15),
+      transparent 24% 72%,
+      rgb(39 0 8 / 0.34)
+    ),
+    linear-gradient(rgb(50 2 12 / 0.44), rgb(50 2 12 / 0.44)), var(--sf-ruby),
+    var(--war-leather-texture) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    auto,
+    720px 480px,
+    184px 184px !important;
+  color: #fff1ef !important;
+}
+
+body.atlas-theme .atlas-settings-modal {
+  scrollbar-color: #8c8e8c #090d0c;
+  scrollbar-width: thin;
+}
+
+body.atlas-theme .atlas-settings-modal::-webkit-scrollbar {
+  width: 9px;
+}
+
+body.atlas-theme .atlas-settings-modal::-webkit-scrollbar-track {
+  background: #090d0c var(--sf-obsidian) center / 720px 480px;
+  box-shadow: inset 0 0 5px #000;
+}
+
+body.atlas-theme .atlas-settings-modal::-webkit-scrollbar-thumb {
+  border: 1px solid #656765;
+  border-radius: 999px;
+  background: #bfc2be var(--sf-quartz) center / 720px 480px;
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 0.62),
+    0 1px 3px rgb(0 0 0 / 0.5);
+}
+
+body.atlas-theme
+  :where(
+    .atlas-modal-section
+      button:not(.atlas-o-button):not(.atlas-war-button):not(.atlas-modal-tab),
+    .modal-overlay button:not(.atlas-war-button):not(.atlas-action-button),
+    .pw-phrase-button,
+    .pw-chat__categories button,
+    .pw-stepper button,
+    .pw-text-button,
+    setting-keybind button,
+    .build-button,
+    .collapse-button,
+    .reset-button,
+    .copy-json-button
+  ):active:not(:disabled) {
+  filter: brightness(0.84);
+  box-shadow:
+    inset 0 5px 9px rgb(0 0 0 / 0.4),
+    inset 0 -1px rgb(255 255 255 / 0.18),
+    0 1px 2px rgb(0 0 0 / 0.38) !important;
+  transform: translateY(2px) scale(0.985);
+}
+
+body.atlas-theme
+  :where(.pw-phrase-button.is-selected, .pw-chat__categories button.is-active) {
+  border-color: #58406d !important;
+  background-image:
+    linear-gradient(
+      180deg,
+      rgb(255 255 255 / 0.42),
+      transparent 47%,
+      rgb(0 0 0 / 0.2)
+    ),
+    var(--sf-amethyst), var(--war-leather-texture) !important;
+  color: #fff8ff !important;
+  text-shadow: 0 1px 2px #190824 !important;
+}
+
+/* HUD: physical enough to match the menus, quiet enough to leave the map as
+ * the dominant visual field. */
+body.atlas-theme.in-game .atlas-hud-button {
+  border-color: rgb(209 218 211 / 0.18) !important;
+  background-color: rgb(12 17 15 / 0.82) !important;
+  background-image:
+    linear-gradient(180deg, rgb(255 255 255 / 0.13), transparent 48%),
+    var(--sf-obsidian) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    720px 480px !important;
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 0.14),
+    inset 0 -3px 5px rgb(0 0 0 / 0.34),
+    0 2px 4px rgb(0 0 0 / 0.32) !important;
+}
+
+body.atlas-theme.in-game
+  .atlas-hud-button:is([aria-expanded="true"], [aria-pressed="true"]) {
+  border-color: rgb(152 116 178 / 0.56) !important;
+  background-image:
+    linear-gradient(180deg, rgb(255 255 255 / 0.16), transparent 48%),
+    var(--sf-amethyst) !important;
+}
+
+body.atlas-theme.in-game :where(.atlas-instrument-readout, .atlas-troop-meter) {
+  background-image:
+    linear-gradient(180deg, rgb(0 0 0 / 0.34), transparent 46%),
+    var(--sf-obsidian) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    720px 480px !important;
+  box-shadow: var(--sf-inset-shadow) !important;
+}
+
+body.atlas-theme.in-game .atlas-attack-dial__face {
+  background-image:
+    radial-gradient(
+      circle at 34% 25%,
+      rgb(255 255 255 / 0.34),
+      transparent 24%
+    ),
+    linear-gradient(
+      145deg,
+      rgb(255 255 255 / 0.08),
+      transparent 42%,
+      rgb(0 0 0 / 0.3)
+    ),
+    var(--sf-obsidian) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    auto,
+    720px 480px !important;
+}
+
+body.atlas-theme.in-game .atlas-attack-dial__bezel {
+  background-image:
+    linear-gradient(
+      145deg,
+      rgb(255 252 215 / 0.66),
+      transparent 19% 74%,
+      rgb(39 18 3 / 0.42)
+    ),
+    var(--sf-amethyst), var(--war-leather-texture) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    720px 480px,
+    184px 184px !important;
+  background-blend-mode: screen, normal, soft-light !important;
+  border-color: #c8a963 !important;
+}
+
+/* Never allow this theme pass to reach the renderer-owned map surface. */
+body.atlas-theme :where(#app, canvas, map-display) {
+  background-image: none;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Satisfum construction pass                                                */
+/* ------------------------------------------------------------------------ */
+
+/*
+ * A surface reads as physical only when its layers have an intelligible job:
+ *   1. photographic mineral substrate
+ *   2. coloured absorption / depth
+ *   3. directional top glaze
+ *   4. dark lower lip and a fine reflected edge
+ *   5. typography printed above the glaze
+ *
+ * These shared recipes keep adjacent components from becoming an undirected
+ * pile of texture. Felt is reserved for the table, obsidian for housings,
+ * quartz for system chrome, and coloured gems for state and action.
+ */
+:root {
+  --sf-obsidian-chassis:
+    linear-gradient(
+      154deg,
+      rgb(255 255 255 / 0.13),
+      transparent 17% 72%,
+      rgb(0 0 0 / 0.42)
+    ),
+    radial-gradient(
+      ellipse at 52% -12%,
+      rgb(159 212 191 / 0.1),
+      transparent 44%
+    ),
+    linear-gradient(rgb(4 10 8 / 0.68), rgb(4 10 8 / 0.68)), var(--sf-obsidian),
+    var(--war-leather-texture), #0a100e;
+  --sf-obsidian-chassis-size: auto, auto, auto, 720px 480px, 184px 184px, auto;
+  --sf-inset-well:
+    linear-gradient(180deg, rgb(0 0 0 / 0.54), transparent 32%),
+    radial-gradient(
+      ellipse at 50% 115%,
+      rgb(110 160 137 / 0.09),
+      transparent 46%
+    ),
+    linear-gradient(rgb(3 8 6 / 0.72), rgb(3 8 6 / 0.72)), var(--sf-obsidian),
+    #070c0a;
+  --sf-inset-well-size: auto, auto, auto, 720px 480px, auto;
+  --sf-felt-table:
+    radial-gradient(
+      ellipse at 16% -8%,
+      rgb(73 173 132 / 0.16),
+      transparent 45%
+    ),
+    radial-gradient(
+      ellipse at 90% 112%,
+      rgb(178 126 61 / 0.1),
+      transparent 42%
+    ),
+    linear-gradient(rgb(2 24 18 / 0.28), rgb(2 16 12 / 0.42)),
+    var(--war-felt-texture), #05251c;
+  --sf-felt-table-size: auto, auto, auto, 418px 418px, auto;
+}
+
+/* The 1254px mahogany source is tiled at 418 CSS px: a true 3x substrate on
+ * modern iPhones without obvious small-tile repetition on desktop. */
+body.atlas-theme:not(.in-game) {
+  background-size:
+    auto,
+    3px 3px,
+    418px 418px,
+    auto !important;
+}
+
+/* The world hub is a felt game table. Frames sit on it; felt does not also
+ * masquerade as every panel, status well, and button. */
+body.atlas-theme .pw-app {
+  background-color: #041b15 !important;
+  background-image: var(--sf-felt-table) !important;
+  background-position: center !important;
+  background-size: var(--sf-felt-table-size) !important;
+  background-blend-mode: screen, screen, normal, soft-light, normal !important;
+}
+
+body.atlas-theme .pw-world-list,
+body.atlas-theme .pw-panel,
+body.atlas-theme .pw-lobby-actions,
+body.atlas-theme .pw-runtime-state {
+  border-color: rgb(226 194 124 / 0.42) !important;
+  background-color: #0b110f !important;
+  background-image: var(--sf-obsidian-chassis) !important;
+  background-position: center !important;
+  background-size: var(--sf-obsidian-chassis-size) !important;
+  background-blend-mode:
+    screen, screen, normal, normal, soft-light, normal !important;
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 0.14),
+    inset 0 -2px 7px rgb(0 0 0 / 0.76),
+    inset 0 0 28px rgb(0 0 0 / 0.22),
+    0 8px 20px rgb(0 0 0 / 0.34) !important;
+}
+
+body.atlas-theme .pw-world-list__header,
+body.atlas-theme .pw-panel__header {
+  border-bottom-color: rgb(236 208 145 / 0.22) !important;
+  background-image:
+    linear-gradient(
+      180deg,
+      rgb(255 255 255 / 0.1),
+      transparent 44%,
+      rgb(0 0 0 / 0.2)
+    ),
+    linear-gradient(rgb(5 12 9 / 0.68), rgb(5 12 9 / 0.68)), var(--sf-obsidian) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    auto,
+    720px 480px !important;
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 0.09),
+    inset 0 -1px rgb(0 0 0 / 0.78) !important;
+}
+
+body.atlas-theme .pw-world-list__cards,
+body.atlas-theme .pw-chat__messages,
+body.atlas-theme .pw-chat__composer,
+body.atlas-theme .pw-chat__preview {
+  background-color: #070d0a !important;
+  background-image: var(--sf-inset-well) !important;
+  background-position: center !important;
+  background-size: var(--sf-inset-well-size) !important;
+  background-blend-mode: multiply, screen, normal, normal, normal !important;
+  box-shadow:
+    inset 0 4px 11px rgb(0 0 0 / 0.74),
+    inset 0 -1px rgb(255 255 255 / 0.08) !important;
+}
+
+body.atlas-theme .pw-empty-state {
+  border-color: rgb(207 179 119 / 0.28) !important;
+  background-color: rgb(12 17 15 / 0.78) !important;
+  background-image:
+    radial-gradient(
+      ellipse at 50% -12%,
+      rgb(133 91 158 / 0.14),
+      transparent 45%
+    ),
+    linear-gradient(rgb(7 12 10 / 0.84), rgb(7 12 10 / 0.84)),
+    var(--sf-obsidian) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    auto,
+    720px 480px !important;
+  color: #c7c1b2 !important;
+  box-shadow:
+    inset 0 3px 9px rgb(0 0 0 / 0.58),
+    inset 0 -1px rgb(255 255 255 / 0.08) !important;
+}
+
+body.atlas-theme .pw-empty-state::before {
+  color: #d5b968 !important;
+  text-shadow: 0 0 12px rgb(225 190 100 / 0.28) !important;
+}
+
+body.atlas-theme .pw-empty-state strong {
+  color: #fff3d0 !important;
+}
+
+/* World invitation cards are pale quartz plaques, not paper pasted on felt.
+ * The new 1254px parchment source stays a subtle 3x grain below the stone. */
+body.atlas-theme .pw-world-card {
+  background-color: #d8d7cd !important;
+  background-image:
+    linear-gradient(
+      155deg,
+      rgb(255 255 255 / 0.62),
+      transparent 20% 72%,
+      rgb(23 26 25 / 0.22)
+    ),
+    linear-gradient(rgb(255 251 238 / 0.34), rgb(255 251 238 / 0.34)),
+    var(--sf-quartz), var(--war-parchment-texture) !important;
+  background-position: center, center, center, center !important;
+  background-size:
+    auto,
+    auto,
+    720px 480px,
+    418px 418px !important;
+  background-blend-mode: screen, normal, normal, soft-light !important;
+  border-color: #75726d !important;
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 0.84),
+    inset 0 -3px 6px rgb(27 30 29 / 0.2),
+    0 2px 0 #3a3d3b,
+    0 7px 16px rgb(0 0 0 / 0.34) !important;
+}
+
+body.atlas-theme .pw-world-card__facts span {
+  border-color: rgb(34 37 36 / 0.24) !important;
+  background: rgb(248 247 239 / 0.48) !important;
+  color: #232522 !important;
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 0.54),
+    inset 0 -1px rgb(0 0 0 / 0.1) !important;
+}
+
+body.atlas-theme .pw-world-list__header h2,
+body.atlas-theme .pw-panel__header h2,
+body.atlas-theme .pw-hub__intro h1 {
+  color: #fff4d4 !important;
+  text-shadow: 0 2px 2px #000 !important;
+}
+
+body.atlas-theme .pw-hub__intro p,
+body.atlas-theme .pw-panel__hint {
+  color: #c8c1ae !important;
+}
+
+/* Wizard cards use one coherent state language: quiet obsidian while idle,
+ * amethyst when chosen. The gem change is the state; contrast never depends
+ * on a thin outline or animation frame. */
+body.atlas-theme .pw-choice-card,
+body.atlas-theme .pw-schedule-card {
+  border-color: rgb(210 193 154 / 0.27) !important;
+  background-color: #101613 !important;
+  background-image:
+    linear-gradient(
+      155deg,
+      rgb(255 255 255 / 0.12),
+      transparent 22% 72%,
+      rgb(0 0 0 / 0.34)
+    ),
+    linear-gradient(rgb(4 10 8 / 0.82), rgb(4 10 8 / 0.82)), var(--sf-obsidian) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    auto,
+    720px 480px !important;
+  color: #eee8da !important;
+  text-shadow: 0 1px 2px #000 !important;
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 0.13),
+    inset 0 -6px 12px rgb(0 0 0 / 0.3),
+    0 4px 10px rgb(0 0 0 / 0.26) !important;
+}
+
+body.atlas-theme .pw-choice-card small,
+body.atlas-theme .pw-schedule-card small {
+  color: #bdb6a7 !important;
+}
+
+body.atlas-theme .pw-choice-card.is-selected,
+body.atlas-theme .pw-schedule-card.is-selected {
+  border-color: #9f82b4 !important;
+  background-color: #44245a !important;
+  background-image:
+    radial-gradient(
+      ellipse at 50% -10%,
+      rgb(255 255 255 / 0.36),
+      transparent 43%
+    ),
+    linear-gradient(rgb(45 15 64 / 0.18), rgb(29 9 43 / 0.34)),
+    var(--sf-amethyst), var(--war-leather-texture) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    auto,
+    720px 480px,
+    184px 184px !important;
+  background-blend-mode: screen, normal, normal, soft-light !important;
+  color: #fffaff !important;
+  text-shadow: 0 1px 2px #1b0925 !important;
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 0.28),
+    inset 0 -9px 16px rgb(20 4 30 / 0.34),
+    0 0 0 1px rgb(228 201 245 / 0.2),
+    0 8px 17px rgb(0 0 0 / 0.4),
+    0 0 22px rgb(150 91 184 / 0.14) !important;
+}
+
+body.atlas-theme .pw-choice-card.is-selected small,
+body.atlas-theme .pw-schedule-card.is-selected small {
+  color: #e4d5eb !important;
+}
+
+body.atlas-theme .pw-choice-card__icon,
+body.atlas-theme .pw-step-number,
+body.atlas-theme .pw-panel__count {
+  border-color: #725685 !important;
+  background-color: #321943 !important;
+  background-image:
+    radial-gradient(
+      circle at 34% 24%,
+      rgb(255 255 255 / 0.36),
+      transparent 28%
+    ),
+    var(--sf-amethyst) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    720px 480px !important;
+  color: #fff0ff !important;
+  text-shadow: 0 1px 2px #180720 !important;
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 0.22),
+    inset 0 -3px 5px rgb(0 0 0 / 0.3),
+    0 2px 5px rgb(0 0 0 / 0.34) !important;
+}
+
+body.atlas-theme .pw-disclosure {
+  border-color: rgb(158 120 184 / 0.42) !important;
+  background-color: #120f16 !important;
+  background-image:
+    linear-gradient(90deg, rgb(114 68 145 / 0.18), transparent 38%),
+    linear-gradient(rgb(7 8 8 / 0.82), rgb(7 8 8 / 0.82)), var(--sf-obsidian) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    auto,
+    720px 480px !important;
+  color: #c8c0cb !important;
+  box-shadow:
+    inset 0 2px 6px rgb(0 0 0 / 0.48),
+    inset 0 -1px rgb(255 255 255 / 0.07) !important;
+}
+
+/* Step state remains readable even at the dimmest point of its pulse. */
+body.atlas-theme .pw-wizard__progress li {
+  color: rgb(229 225 214 / 0.62) !important;
+  font-size: 0.56rem !important;
+}
+
+body.atlas-theme .pw-wizard__progress li.is-current,
+body.atlas-theme .pw-wizard__progress li.is-complete {
+  color: #f2dfae !important;
+}
+
+body.atlas-theme .pw-wizard__position,
+body.atlas-theme .pw-wizard-step__intro p {
+  color: #bcb5a5 !important;
+}
+
+body.atlas-theme .pw-wizard__step:disabled {
+  opacity: 0.68 !important;
+}
+
+body.atlas-theme .pw-wizard__step > span {
+  border-color: rgb(188 184 174 / 0.34) !important;
+  color: rgb(235 231 220 / 0.72) !important;
+}
+
+body.atlas-theme
+  .pw-wizard__progress
+  li:is(.is-current, .is-complete)
+  .pw-wizard__step
+  > span {
+  color: #211502 !important;
+}
+
+body.atlas-theme .pw-button:disabled,
+body.atlas-theme .pw-icon-button:disabled,
+body.atlas-theme .pw-header-action:disabled {
+  opacity: 0.72 !important;
+  filter: grayscale(0.5) brightness(0.78) !important;
+}
+
+/* Loading is a distinct smoked-quartz state, not a red leather placeholder.
+ * The moving glint remains visible without making the whole layout flash. */
+body.atlas-theme .pw-skeleton {
+  border-color: rgb(201 195 182 / 0.2) !important;
+  background-color: #101513 !important;
+  background-image:
+    linear-gradient(rgb(4 9 7 / 0.72), rgb(4 9 7 / 0.72)), var(--sf-obsidian) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    720px 480px !important;
+  box-shadow:
+    inset 0 2px 8px rgb(0 0 0 / 0.6),
+    inset 0 -1px rgb(255 255 255 / 0.08) !important;
+}
+
+body.atlas-theme .pw-skeleton span {
+  background: rgb(233 229 216 / 0.11) !important;
+  box-shadow: inset 0 1px rgb(255 255 255 / 0.05) !important;
+}
+
+/* Dense settings repeat the same rock, but through a smoked finish. Texture
+ * remains visible at close inspection instead of competing with every label. */
+body.atlas-theme .atlas-settings-list button,
+body.atlas-theme .atlas-settings-list > .flex:not(button),
+body.atlas-theme .atlas-settings-modal,
+body.atlas-theme .atlas-settings-header {
+  background-image:
+    linear-gradient(
+      155deg,
+      rgb(255 255 255 / 0.1),
+      transparent 24% 74%,
+      rgb(0 0 0 / 0.3)
+    ),
+    linear-gradient(rgb(5 10 8 / 0.72), rgb(5 10 8 / 0.72)), var(--sf-obsidian),
+    var(--war-leather-texture) !important;
+  background-position: center !important;
+  background-size:
+    auto,
+    auto,
+    720px 480px,
+    184px 184px !important;
+  background-blend-mode: screen, normal, normal, soft-light !important;
+}
+
+/* Fine ornament belongs at structural joints, where it explains assembly.
+ * A small brass pin on a panel header feels intentional; filigree sprayed
+ * across body copy does not. */
+body.atlas-theme .pw-world-list__header::before,
+body.atlas-theme .pw-panel__header::before {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border: 1px solid #6b4b16;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 34% 28%,
+    #fff1b3,
+    #b98225 42%,
+    #4a2b08 76%
+  );
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 0.45),
+    0 1px 2px #000;
+  content: "";
+}
+
+body.atlas-theme .pw-world-list__header > div,
+body.atlas-theme .pw-panel__header > div {
+  flex: 1 1 auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.atlas-theme input[type="range"]::-webkit-slider-thumb,
+  body.atlas-theme input[type="range"]::-moz-range-thumb {
+    transition: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  body.atlas-theme :where(button, input, select, textarea) {
+    background-image: none !important;
+  }
+}

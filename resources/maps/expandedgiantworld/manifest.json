@@ -1,0 +1,1213 @@
+{
+  "categories": [
+    "world"
+  ],
+  "id": "ExpandedGiantWorld",
+  "map": {
+    "format": "paged-v1",
+    "width": 8216,
+    "height": 3896,
+    "num_land_tiles": 9341612,
+    "page_size": 1024,
+    "pages_wide": 9,
+    "pages_high": 4,
+    "pages": [
+      {
+        "x": 0,
+        "y": 0,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/0-0.bin",
+        "byte_length": 1048576,
+        "sha256": "7a208bda895eabe0dd252053002db796a74aaea4142bb9273c064df1749c7496"
+      },
+      {
+        "x": 1,
+        "y": 0,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/1-0.bin",
+        "byte_length": 1048576,
+        "sha256": "d8fa95a9468884557647cb7e5bd117c3e0c1ac6a2572ec9d38941c58a5585f18"
+      },
+      {
+        "x": 2,
+        "y": 0,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/2-0.bin",
+        "byte_length": 1048576,
+        "sha256": "ddb8d92edfd85cb2cc697205ee7376e6b44d13536bd7be2822de977e71732709"
+      },
+      {
+        "x": 3,
+        "y": 0,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/3-0.bin",
+        "byte_length": 1048576,
+        "sha256": "031c6590c280113cbadda14439263b4eb0c53617cdc5e3c0d2a4fbb3c2227019"
+      },
+      {
+        "x": 4,
+        "y": 0,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/4-0.bin",
+        "byte_length": 1048576,
+        "sha256": "3f1a6d3ac57e2071525f9350691b2351127b7fb08ccb2726ba1f49bd16efa833"
+      },
+      {
+        "x": 5,
+        "y": 0,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/5-0.bin",
+        "byte_length": 1048576,
+        "sha256": "2b09b138499be5ded0fcd9dbe1c3ba1274de16a1d2a87359b9322f20ea4d1b02"
+      },
+      {
+        "x": 6,
+        "y": 0,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/6-0.bin",
+        "byte_length": 1048576,
+        "sha256": "22bcc0d3d83911a2e10305bd1d8311b4ddffb3212b83581996467c670e59a6a1"
+      },
+      {
+        "x": 7,
+        "y": 0,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/7-0.bin",
+        "byte_length": 1048576,
+        "sha256": "5dd68233bfc3b0825885fb96f6a9b42d1f5d44adfa0b9f22b854b24743d7bbf1"
+      },
+      {
+        "x": 8,
+        "y": 0,
+        "width": 24,
+        "height": 1024,
+        "path": "pages/8-0.bin",
+        "byte_length": 24576,
+        "sha256": "d64ee6526d94dc221c31967480ca12602efb3fb29be99739cc1dce689198ffd6"
+      },
+      {
+        "x": 0,
+        "y": 1,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/0-1.bin",
+        "byte_length": 1048576,
+        "sha256": "ac9d1b1e309c6db49ba84fc7246fee2acd5c4c6318277db29f6ee616fdff3d49"
+      },
+      {
+        "x": 1,
+        "y": 1,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/1-1.bin",
+        "byte_length": 1048576,
+        "sha256": "4dcc36ebfcca2f812b62206ccf802380e6b92b04366e49ab0a6cd070e9c09c64"
+      },
+      {
+        "x": 2,
+        "y": 1,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/2-1.bin",
+        "byte_length": 1048576,
+        "sha256": "607f0ea0a42d549c8be3930fa9f408899520c713994d3e18102f5eee5801131c"
+      },
+      {
+        "x": 3,
+        "y": 1,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/3-1.bin",
+        "byte_length": 1048576,
+        "sha256": "2d944d0cc6c30e137a54bb2213bf11db509cd14eef22fade18e79e5b6209d128"
+      },
+      {
+        "x": 4,
+        "y": 1,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/4-1.bin",
+        "byte_length": 1048576,
+        "sha256": "447c1545f8fdf6a44f3bfbb62d0f858afde749107c21dd1885dc8913a9c8dcc0"
+      },
+      {
+        "x": 5,
+        "y": 1,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/5-1.bin",
+        "byte_length": 1048576,
+        "sha256": "446eee16c6b9f114bda8c7cd15a94c4dacdc739f2e16b43a83ed9a67ec51f5f0"
+      },
+      {
+        "x": 6,
+        "y": 1,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/6-1.bin",
+        "byte_length": 1048576,
+        "sha256": "d445228d1109f8dba51d9a860abe3846e03d11e4a15d133117edeca3056f57fd"
+      },
+      {
+        "x": 7,
+        "y": 1,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/7-1.bin",
+        "byte_length": 1048576,
+        "sha256": "2b498c440c12bb5b8ebfd67c77f260f4489e00a762dd58f62c8133aaa3df2e78"
+      },
+      {
+        "x": 8,
+        "y": 1,
+        "width": 24,
+        "height": 1024,
+        "path": "pages/8-1.bin",
+        "byte_length": 24576,
+        "sha256": "b330f2b4122f72a03697a9a467c54563157da69f5f4a15ae5911b6ea0466b705"
+      },
+      {
+        "x": 0,
+        "y": 2,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/0-2.bin",
+        "byte_length": 1048576,
+        "sha256": "ddc985a3c95b1e19096e947d1d941fa194263802c7fef9860e7f9b93973a9c25"
+      },
+      {
+        "x": 1,
+        "y": 2,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/1-2.bin",
+        "byte_length": 1048576,
+        "sha256": "6287423ba7029418676521524eed3d9c67e7231e016b49a31f484027782ff727"
+      },
+      {
+        "x": 2,
+        "y": 2,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/2-2.bin",
+        "byte_length": 1048576,
+        "sha256": "a0ac280166398413199bfc6a50fb33e46b61256beb91f5b1e79abf06d042ec19"
+      },
+      {
+        "x": 3,
+        "y": 2,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/3-2.bin",
+        "byte_length": 1048576,
+        "sha256": "aa65e506a987528440155776a773508ffbe03e9d4ace2c4ad5b03cb54a52cde8"
+      },
+      {
+        "x": 4,
+        "y": 2,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/4-2.bin",
+        "byte_length": 1048576,
+        "sha256": "091c5556384e82db0b962c05c5f318925388f0558a9d699477e02a44e9e4cfcd"
+      },
+      {
+        "x": 5,
+        "y": 2,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/5-2.bin",
+        "byte_length": 1048576,
+        "sha256": "fd11c7a9a81cec3a1d2ce5ed79af79775bce6d9d5aa8e0e74fa213aee143075f"
+      },
+      {
+        "x": 6,
+        "y": 2,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/6-2.bin",
+        "byte_length": 1048576,
+        "sha256": "e1dfee09f6e2a3b9138b4adb04bee956e59b8839d6a47d1d274526e12fbb101e"
+      },
+      {
+        "x": 7,
+        "y": 2,
+        "width": 1024,
+        "height": 1024,
+        "path": "pages/7-2.bin",
+        "byte_length": 1048576,
+        "sha256": "715748ec3063512178e1b7b5d7796e9804e0e4ee98a3b2041a0cb68bd9d9f4ea"
+      },
+      {
+        "x": 8,
+        "y": 2,
+        "width": 24,
+        "height": 1024,
+        "path": "pages/8-2.bin",
+        "byte_length": 24576,
+        "sha256": "b330f2b4122f72a03697a9a467c54563157da69f5f4a15ae5911b6ea0466b705"
+      },
+      {
+        "x": 0,
+        "y": 3,
+        "width": 1024,
+        "height": 824,
+        "path": "pages/0-3.bin",
+        "byte_length": 843776,
+        "sha256": "54974d889454feb6706639bd7be3277515d1b024c3f21685d6c30833ac648518"
+      },
+      {
+        "x": 1,
+        "y": 3,
+        "width": 1024,
+        "height": 824,
+        "path": "pages/1-3.bin",
+        "byte_length": 843776,
+        "sha256": "d4d16f643c4f38170252f3088e06723183996f46aba2485a83cc7b29f530017c"
+      },
+      {
+        "x": 2,
+        "y": 3,
+        "width": 1024,
+        "height": 824,
+        "path": "pages/2-3.bin",
+        "byte_length": 843776,
+        "sha256": "60d208e20b1df12714ead9a8babf9f6711e9a104fe1cd2ec2aaa98efb806443d"
+      },
+      {
+        "x": 3,
+        "y": 3,
+        "width": 1024,
+        "height": 824,
+        "path": "pages/3-3.bin",
+        "byte_length": 843776,
+        "sha256": "c4aab0b5957a116fef4ff6802d1a147eb8d46e7349282eb23d143b3be6ed5794"
+      },
+      {
+        "x": 4,
+        "y": 3,
+        "width": 1024,
+        "height": 824,
+        "path": "pages/4-3.bin",
+        "byte_length": 843776,
+        "sha256": "bfbc3466633d53715e0a71c02a8c44563ec5a160e3272582e250b423d4cd9473"
+      },
+      {
+        "x": 5,
+        "y": 3,
+        "width": 1024,
+        "height": 824,
+        "path": "pages/5-3.bin",
+        "byte_length": 843776,
+        "sha256": "3ef40e9cafab885dc7ea75a53d39cb01d0c2739a2778e14ddb129bdcf432d031"
+      },
+      {
+        "x": 6,
+        "y": 3,
+        "width": 1024,
+        "height": 824,
+        "path": "pages/6-3.bin",
+        "byte_length": 843776,
+        "sha256": "d849aeb55e2b8330b92de5cf36fadbab80a12b128c74a6773fd597745991a024"
+      },
+      {
+        "x": 7,
+        "y": 3,
+        "width": 1024,
+        "height": 824,
+        "path": "pages/7-3.bin",
+        "byte_length": 843776,
+        "sha256": "d3024c984efe83948d94753583704df5bdd389d1cbfbd7e35d6f1ec5835df086"
+      },
+      {
+        "x": 8,
+        "y": 3,
+        "width": 24,
+        "height": 824,
+        "path": "pages/8-3.bin",
+        "byte_length": 19776,
+        "sha256": "c25ecb39b3990aa5611e1696c8d42fc97f72065c3322f16babee7c01dde8d92b"
+      }
+    ]
+  },
+  "map16x": {
+    "height": 974,
+    "num_land_tiles": 563303,
+    "width": 2054
+  },
+  "map4x": {
+    "height": 1948,
+    "num_land_tiles": 2335403,
+    "width": 4108
+  },
+  "multiplayer_frequency": 0,
+  "name": "Expanded Earth",
+  "nations": [
+    {
+      "coordinates": [
+        4618,
+        1070
+      ],
+      "flag": "tr",
+      "name": "Türkiye"
+    },
+    {
+      "coordinates": [
+        4100,
+        790
+      ],
+      "flag": "de",
+      "name": "Germany"
+    },
+    {
+      "coordinates": [
+        3932,
+        884
+      ],
+      "flag": "fr",
+      "name": "France"
+    },
+    {
+      "coordinates": [
+        3744,
+        1056
+      ],
+      "flag": "es",
+      "name": "Spain"
+    },
+    {
+      "coordinates": [
+        4148,
+        996
+      ],
+      "flag": "it",
+      "name": "Italy"
+    },
+    {
+      "coordinates": [
+        3824,
+        758
+      ],
+      "flag": "gb",
+      "name": "United Kingdom"
+    },
+    {
+      "coordinates": [
+        3682,
+        746
+      ],
+      "flag": "ie",
+      "name": "Ireland"
+    },
+    {
+      "coordinates": [
+        4306,
+        756
+      ],
+      "flag": "pl",
+      "name": "Poland"
+    },
+    {
+      "coordinates": [
+        4356,
+        1078
+      ],
+      "flag": "gr",
+      "name": "Greece"
+    },
+    {
+      "coordinates": [
+        4444,
+        986
+      ],
+      "flag": "bg",
+      "name": "Bulgaria"
+    },
+    {
+      "coordinates": [
+        4270,
+        962
+      ],
+      "flag": "rs",
+      "name": "Serbia"
+    },
+    {
+      "coordinates": [
+        4484,
+        922
+      ],
+      "flag": "ro",
+      "name": "Romania"
+    },
+    {
+      "coordinates": [
+        4326,
+        882
+      ],
+      "flag": "hu",
+      "name": "Hungary"
+    },
+    {
+      "coordinates": [
+        4544,
+        836
+      ],
+      "flag": "ua",
+      "name": "Ukraine"
+    },
+    {
+      "coordinates": [
+        4186,
+        594
+      ],
+      "flag": "se",
+      "name": "Sweden"
+    },
+    {
+      "coordinates": [
+        4054,
+        564
+      ],
+      "flag": "no",
+      "name": "Norway"
+    },
+    {
+      "coordinates": [
+        4382,
+        388
+      ],
+      "flag": "Sami flag",
+      "name": "Sápmi"
+    },
+    {
+      "coordinates": [
+        4412,
+        524
+      ],
+      "flag": "fi",
+      "name": "Finland"
+    },
+    {
+      "coordinates": [
+        4752,
+        726
+      ],
+      "flag": "ru",
+      "name": "Russia"
+    },
+    {
+      "coordinates": [
+        4444,
+        742
+      ],
+      "flag": "by",
+      "name": "Belarus"
+    },
+    {
+      "coordinates": [
+        4882,
+        1014
+      ],
+      "flag": "ge",
+      "name": "Georgia"
+    },
+    {
+      "coordinates": [
+        4804,
+        1160
+      ],
+      "flag": "iq",
+      "name": "Iraq"
+    },
+    {
+      "coordinates": [
+        4706,
+        1190
+      ],
+      "flag": "sy",
+      "name": "Syria"
+    },
+    {
+      "coordinates": [
+        4828,
+        1358
+      ],
+      "flag": "sa",
+      "name": "Saudi Arabia"
+    },
+    {
+      "coordinates": [
+        4912,
+        1640
+      ],
+      "flag": "ye",
+      "name": "Yemen"
+    },
+    {
+      "coordinates": [
+        5108,
+        1448
+      ],
+      "flag": "ae",
+      "name": "United Arab Emirates"
+    },
+    {
+      "coordinates": [
+        5064,
+        1218
+      ],
+      "flag": "ir",
+      "name": "Iran"
+    },
+    {
+      "coordinates": [
+        5366,
+        1300
+      ],
+      "flag": "pk",
+      "name": "Pakistan"
+    },
+    {
+      "coordinates": [
+        5308,
+        1160
+      ],
+      "flag": "af",
+      "name": "Afghanistan"
+    },
+    {
+      "coordinates": [
+        5454,
+        832
+      ],
+      "flag": "kz",
+      "name": "Kazakhstan"
+    },
+    {
+      "coordinates": [
+        5112,
+        1088
+      ],
+      "flag": "tm",
+      "name": "Turkmenistan"
+    },
+    {
+      "coordinates": [
+        6510,
+        556
+      ],
+      "flag": "Siberia",
+      "name": "Siberia"
+    },
+    {
+      "coordinates": [
+        5620,
+        1488
+      ],
+      "flag": "in",
+      "name": "India"
+    },
+    {
+      "coordinates": [
+        3434,
+        474
+      ],
+      "flag": "is",
+      "name": "Iceland"
+    },
+    {
+      "coordinates": [
+        5888,
+        1418
+      ],
+      "flag": "bd",
+      "name": "Bangladesh"
+    },
+    {
+      "coordinates": [
+        5740,
+        1312
+      ],
+      "flag": "np",
+      "name": "Nepal"
+    },
+    {
+      "coordinates": [
+        6344,
+        1248
+      ],
+      "flag": "cn",
+      "name": "China"
+    },
+    {
+      "coordinates": [
+        6746,
+        1042
+      ],
+      "flag": "kp",
+      "name": "North Korea"
+    },
+    {
+      "coordinates": [
+        6778,
+        1146
+      ],
+      "flag": "kr",
+      "name": "South Korea"
+    },
+    {
+      "coordinates": [
+        7030,
+        1142
+      ],
+      "flag": "jp",
+      "name": "Japan"
+    },
+    {
+      "coordinates": [
+        6052,
+        914
+      ],
+      "flag": "mn",
+      "name": "Mongolia"
+    },
+    {
+      "coordinates": [
+        6458,
+        1990
+      ],
+      "flag": "id",
+      "name": "Indonesia"
+    },
+    {
+      "coordinates": [
+        6290,
+        1604
+      ],
+      "flag": "vn",
+      "name": "Vietnam"
+    },
+    {
+      "coordinates": [
+        6040,
+        1500
+      ],
+      "flag": "mm",
+      "name": "Myanmar"
+    },
+    {
+      "coordinates": [
+        6164,
+        1644
+      ],
+      "flag": "th",
+      "name": "Thailand"
+    },
+    {
+      "coordinates": [
+        7076,
+        2134
+      ],
+      "flag": "pg",
+      "name": "Papua New Guinea"
+    },
+    {
+      "coordinates": [
+        7140,
+        2784
+      ],
+      "flag": "au",
+      "name": "Australia"
+    },
+    {
+      "coordinates": [
+        6832,
+        2426
+      ],
+      "flag": "Australian Aboriginal Flag",
+      "name": "Nawan-mirri"
+    },
+    {
+      "coordinates": [
+        7760,
+        3042
+      ],
+      "flag": "nz",
+      "name": "New Zealand"
+    },
+    {
+      "coordinates": [
+        5264,
+        3786
+      ],
+      "flag": "aq",
+      "name": "Antarctica"
+    },
+    {
+      "coordinates": [
+        4076,
+        1180
+      ],
+      "flag": "tn",
+      "name": "Tunisia"
+    },
+    {
+      "coordinates": [
+        4276,
+        1350
+      ],
+      "flag": "ly",
+      "name": "Libya"
+    },
+    {
+      "coordinates": [
+        4562,
+        1306
+      ],
+      "flag": "eg",
+      "name": "Egypt"
+    },
+    {
+      "coordinates": [
+        3718,
+        1226
+      ],
+      "flag": "ma",
+      "name": "Morocco"
+    },
+    {
+      "coordinates": [
+        3904,
+        1342
+      ],
+      "flag": "dz",
+      "name": "Algeria"
+    },
+    {
+      "coordinates": [
+        4542,
+        1576
+      ],
+      "flag": "sd",
+      "name": "Sudan"
+    },
+    {
+      "coordinates": [
+        4932,
+        1836
+      ],
+      "flag": "so",
+      "name": "Somalia"
+    },
+    {
+      "coordinates": [
+        4704,
+        1790
+      ],
+      "flag": "et",
+      "name": "Ethiopia"
+    },
+    {
+      "coordinates": [
+        3580,
+        1458
+      ],
+      "flag": "mr",
+      "name": "Mauritania"
+    },
+    {
+      "coordinates": [
+        4236,
+        1536
+      ],
+      "flag": "td",
+      "name": "Chad"
+    },
+    {
+      "coordinates": [
+        4018,
+        1620
+      ],
+      "flag": "ne",
+      "name": "Niger"
+    },
+    {
+      "coordinates": [
+        3992,
+        1818
+      ],
+      "flag": "ng",
+      "name": "Nigeria"
+    },
+    {
+      "coordinates": [
+        3610,
+        1814
+      ],
+      "flag": "lr",
+      "name": "Liberia"
+    },
+    {
+      "coordinates": [
+        4390,
+        1836
+      ],
+      "flag": "cf",
+      "name": "Central African Republic"
+    },
+    {
+      "coordinates": [
+        4394,
+        2140
+      ],
+      "flag": "cd",
+      "name": "DR Congo"
+    },
+    {
+      "coordinates": [
+        4422,
+        2778
+      ],
+      "flag": "za",
+      "name": "South Africa"
+    },
+    {
+      "coordinates": [
+        4904,
+        2494
+      ],
+      "flag": "mg",
+      "name": "Madagascar"
+    },
+    {
+      "coordinates": [
+        4712,
+        2330
+      ],
+      "flag": "mz",
+      "name": "Mozambique"
+    },
+    {
+      "coordinates": [
+        4736,
+        2064
+      ],
+      "flag": "tz",
+      "name": "Tanzania"
+    },
+    {
+      "coordinates": [
+        3788,
+        1578
+      ],
+      "flag": "ml",
+      "name": "Mali"
+    },
+    {
+      "coordinates": [
+        4256,
+        2584
+      ],
+      "flag": "na",
+      "name": "Namibia"
+    },
+    {
+      "coordinates": [
+        4198,
+        2356
+      ],
+      "flag": "ao",
+      "name": "Angola"
+    },
+    {
+      "coordinates": [
+        2836,
+        2334
+      ],
+      "flag": "br",
+      "name": "Brazil"
+    },
+    {
+      "coordinates": [
+        2450,
+        2130
+      ],
+      "flag": "amazonas",
+      "name": "Amazonas"
+    },
+    {
+      "coordinates": [
+        2486,
+        2856
+      ],
+      "flag": "ar",
+      "name": "Argentina"
+    },
+    {
+      "coordinates": [
+        2250,
+        2712
+      ],
+      "flag": "cl",
+      "name": "Chile"
+    },
+    {
+      "coordinates": [
+        2128,
+        2222
+      ],
+      "flag": "pe",
+      "name": "Peru"
+    },
+    {
+      "coordinates": [
+        2166,
+        1876
+      ],
+      "flag": "co",
+      "name": "Colombia"
+    },
+    {
+      "coordinates": [
+        2366,
+        1842
+      ],
+      "flag": "ve",
+      "name": "Venezuela"
+    },
+    {
+      "coordinates": [
+        1826,
+        1666
+      ],
+      "flag": "ni",
+      "name": "Nicaragua"
+    },
+    {
+      "coordinates": [
+        1528,
+        1486
+      ],
+      "flag": "mx",
+      "name": "Mexico"
+    },
+    {
+      "coordinates": [
+        2068,
+        1112
+      ],
+      "flag": "us",
+      "name": "United States"
+    },
+    {
+      "coordinates": [
+        1532,
+        1246
+      ],
+      "flag": "Texas",
+      "name": "Texas"
+    },
+    {
+      "coordinates": [
+        1102,
+        1128
+      ],
+      "flag": "California",
+      "name": "California"
+    },
+    {
+      "coordinates": [
+        1308,
+        1060
+      ],
+      "flag": "Utah",
+      "name": "Utah"
+    },
+    {
+      "coordinates": [
+        2158,
+        770
+      ],
+      "flag": "Quebec",
+      "name": "Quebec"
+    },
+    {
+      "coordinates": [
+        2422,
+        728
+      ],
+      "flag": "newfoundlandandlabrador",
+      "name": "Newfoundland and Labrador"
+    },
+    {
+      "coordinates": [
+        1914,
+        812
+      ],
+      "flag": "ca",
+      "name": "Canada"
+    },
+    {
+      "coordinates": [
+        340,
+        488
+      ],
+      "flag": "Alaska",
+      "name": "Alaska"
+    },
+    {
+      "coordinates": [
+        1714,
+        464
+      ],
+      "flag": "Nunavut",
+      "name": "Nunavut"
+    },
+    {
+      "coordinates": [
+        950,
+        508
+      ],
+      "flag": "Yukon",
+      "name": "Yukon"
+    },
+    {
+      "coordinates": [
+        2896,
+        274
+      ],
+      "flag": "gl",
+      "name": "Greenland"
+    },
+    {
+      "coordinates": [
+        4494,
+        2458
+      ],
+      "flag": "zw",
+      "name": "Zimbabwe"
+    },
+    {
+      "coordinates": [
+        1100,
+        876
+      ],
+      "flag": "Washington",
+      "name": "Washington"
+    },
+    {
+      "coordinates": [
+        1556,
+        1036
+      ],
+      "flag": "Kansas",
+      "name": "Kansas"
+    },
+    {
+      "coordinates": [
+        1824,
+        1226
+      ],
+      "flag": "Mississippi",
+      "name": "Mississippi"
+    },
+    {
+      "coordinates": [
+        2416,
+        2438
+      ],
+      "flag": "bo",
+      "name": "Bolivia"
+    },
+    {
+      "coordinates": [
+        4118,
+        2030
+      ],
+      "flag": "ga",
+      "name": "Gabon"
+    },
+    {
+      "coordinates": [
+        1378,
+        874
+      ],
+      "flag": "Montana",
+      "name": "Montana"
+    },
+    {
+      "coordinates": [
+        1034,
+        714
+      ],
+      "flag": "britishcolumbia",
+      "name": "British Columbia"
+    },
+    {
+      "coordinates": [
+        1236,
+        716
+      ],
+      "flag": "alberta",
+      "name": "Alberta"
+    },
+    {
+      "coordinates": [
+        1464,
+        720
+      ],
+      "flag": "saskatchewan",
+      "name": "Saskatchewan"
+    },
+    {
+      "coordinates": [
+        1668,
+        734
+      ],
+      "flag": "manitoba",
+      "name": "Manitoba"
+    },
+    {
+      "coordinates": [
+        2216,
+        1000
+      ],
+      "flag": "Massachusetts",
+      "name": "Massachusetts"
+    },
+    {
+      "coordinates": [
+        1690,
+        930
+      ],
+      "flag": "Minnesota",
+      "name": "Minnesota"
+    },
+    {
+      "coordinates": [
+        1920,
+        1000
+      ],
+      "flag": "Michigan",
+      "name": "Michigan"
+    },
+    {
+      "coordinates": [
+        1310,
+        494
+      ],
+      "flag": "northwestterritories",
+      "name": "Northwest Territories"
+    }
+  ],
+  "translation_key": "map.expandedgiantworld",
+  "additionalNations": []
+}

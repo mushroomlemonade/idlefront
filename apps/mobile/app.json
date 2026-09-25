@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "IdleFront",
+    "slug": "pressure-atlas",
+    "scheme": "pressureatlas",
+    "version": "0.11.0",
+    "orientation": "default",
+    "icon": "./assets/idlefront-icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#05090c",
+    "ios": {
+      "bundleIdentifier": "today.sightings.pressureatlas",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoadsInWebContent": true,
+          "NSAllowsLocalNetworking": true
+        }
+      }
+    },
+    "android": {
+      "package": "today.sightings.pressureatlas",
+      "predictiveBackGestureEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/idlefront-icon.png"
+    },
+    "plugins": [
+      "expo-dev-client",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          },
+          "ios": {
+            "deploymentTarget": "16.4"
+          }
+        }
+      ],
+      "expo-status-bar"
+    ]
+  }
+}

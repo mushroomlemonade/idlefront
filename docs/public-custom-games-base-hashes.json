@@ -1,0 +1,74 @@
+[
+  {
+    "file": "src/core/WorldPresets.ts",
+    "originalSha256": null
+  },
+  {
+    "file": "src/core/PersistentWorldSchemas.ts",
+    "originalSha256": "898605215A4875453E298141C84E426895215498F332D3E401730A90024D420A"
+  },
+  {
+    "file": "src/server/persistent/PersistentWorldRepository.ts",
+    "originalSha256": "A431767CC08E90000ADBA511AEF5F810965E7CBF4764C8E4AFA4BA1DAC1C5FF4"
+  },
+  {
+    "file": "src/server/persistent/PersistentWorldService.ts",
+    "originalSha256": "868A4D1C40F53D768E8AF184F714FF3E825C8729592840C876ABA24BEB48F2D2"
+  },
+  {
+    "file": "src/server/persistent/PersistentWorldRoutes.ts",
+    "originalSha256": "949BA00495643572EE50FF2BEE265EEAE15FCF744E32072CF5C4E5B7D64F36DA"
+  },
+  {
+    "file": "src/server/PersistentWorldRuntimeBridge.ts",
+    "originalSha256": "697DDA746F2B4BC119B580BBE92DD22BC387D5860E877F26BE42F906EDA8B665"
+  },
+  {
+    "file": "src/client/PersistentWorldApi.ts",
+    "originalSha256": "36D4C2B575A3490CF34F9E02ACADA8B4DE7762D5227BF3F6E1739B5C2013C6DD"
+  },
+  {
+    "file": "src/client/components/DeveloperMenu.ts",
+    "originalSha256": "C2763B53D2E0832D5729BBBB0E7C046DE496571E73D335611C4BCEA0A90C0B8B"
+  },
+  {
+    "file": "src/client/components/persistent-world/WorldModeSummary.ts",
+    "originalSha256": null
+  },
+  {
+    "file": "src/client/components/persistent-world/PersistentWorldPage.ts",
+    "originalSha256": "B28DD2A76670858226A2398EAF51D086CA3292478578ACEA86BC2F3AF178728F"
+  },
+  {
+    "file": "src/client/components/persistent-world/PersistentWorldCreationWizard.ts",
+    "originalSha256": "9292C94E37ACAF0B4DD654B8458D59E5DFF06DACB6A08E263E8782C783D15C45"
+  },
+  {
+    "file": "src/client/components/persistent-world/PersistentWorldComponents.ts",
+    "originalSha256": "7D14C5A8303E434B2B53B01CF85C2B8A8FDC581ED467166FC506560B542A5054"
+  },
+  {
+    "file": "src/client/styles/persistent-world.css",
+    "originalSha256": "DD173A6AB31A37558BCA3092CB64C57DB3A2DF92B1BD7C9505C1D9EF5EED09B4"
+  },
+  {
+    "file": "tests/server/persistent/PersistentWorldRuntimeBridge.test.ts",
+    "originalSha256": "25D948193209A52A79A14BC21337901DBC15E46B001AFE0EBF4A5989AAB48021"
+  },
+  {
+    "file": "tests/server/persistent/PersistentWorldApi.test.ts",
+    "originalSha256": "0BE46334A1B7EAE69D302F568EBD0620E02A7D80C781D55BE7E82EE88A49EE4E"
+  },
+  {
+    "file": "tests/server/persistent/PersistentWorldServiceLifecycle.test.ts",
+    "originalSha256": "2CC4F6E4B457988C78E86A44D3D569142845EF435E4831DCF29E229EC5376D48"
+  },
+  {
+    "file": "tests/server/persistent/CustomWorlds.test.ts",
+    "originalSha256": null
+  },
+  {
+    "file": "tests/client/CustomGameWizard.test.ts",
+    "originalSha256": null
+  }
+]

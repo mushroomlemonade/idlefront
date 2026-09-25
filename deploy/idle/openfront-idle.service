@@ -1,0 +1,27 @@
+[Unit]
+Description=OpenFront idle authoritative game server
+Documentation=https://github.com/owner/repository/blob/main/docs/idle-operations.md
+Wants=network-online.target
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/openfront-idle/openfront-idle.env
+ExecStartPre=-/usr/bin/docker rm --force openfront-idle
+ExecStart=/usr/bin/docker run --name openfront-idle --network openfront-idle --read-only --cap-drop=ALL --security-opt=no-new-privileges:true --user 65532:65532 --tmpfs /tmp:rw,noexec,nosuid,nodev,size=64m --mount type=bind,src=/var/lib/openfront-idle,dst=/var/lib/openfront-idle --publish 127.0.0.1:3000:3000 --log-driver=local --log-opt max-size=10m --log-opt max-file=3 --env-file /etc/openfront-idle/openfront-idle.env ${IDLE_IMAGE}
+ExecStop=/usr/bin/docker stop --time 20 openfront-idle
+Restart=always
+RestartSec=5s
+TimeoutStartSec=120s
+TimeoutStopSec=30s
+
+# Docker provides the process isolation. These still constrain the local
+# docker client and any future helper added to this unit.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+
+[Install]
+WantedBy=multi-user.target

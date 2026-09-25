@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily encrypted backup for OpenFront idle
+
+[Timer]
+OnCalendar=*-*-* 03:17:00
+RandomizedDelaySec=45m
+Persistent=true
+Unit=openfront-idle-backup.service
+
+[Install]
+WantedBy=timers.target

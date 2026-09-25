@@ -1,0 +1,32 @@
+{
+  "name": "@pressure-atlas/mobile",
+  "version": "0.11.0",
+  "main": "index.ts",
+  "dependencies": {
+    "expo": "~57.0.20",
+    "expo-build-properties": "~57.0.17",
+    "expo-dev-client": "~57.0.18",
+    "expo-haptics": "~57.0.2",
+    "expo-linear-gradient": "~57.0.1",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-webview": "13.16.1"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.4",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "expo start",
+    "start:lan": "expo start --go --lan",
+    "start:tunnel": "expo start --go --tunnel",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit",
+    "doctor": "expo-doctor"
+  },
+  "private": true
+}

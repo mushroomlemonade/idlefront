@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#111826" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <title>IdleFront</title>
+    <style>
+      /* Tiny critical fallback: a failed stylesheet must still be readable on iOS. */
+      html,
+      body {
+        min-width: 320px;
+        min-height: 100%;
+        margin: 0;
+        overflow-x: hidden;
+        color: #f4f0e8;
+        background: #111826;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      .app-shell {
+        width: 100%;
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 14px;
+      }
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 60px;
+        gap: 12px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: inherit;
+        text-decoration: none;
+      }
+      .brand-mark {
+        display: none;
+      }
+      .connection-pill {
+        padding: 8px;
+        border: 1px solid #657083;
+        border-radius: 99px;
+      }
+      .resource-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .resource-card,
+      .map-card,
+      .activity-card,
+      .diagnostics {
+        margin: 8px 0;
+        padding: 12px;
+        border: 1px solid #657083;
+        border-radius: 14px;
+        background: #1b2535;
+      }
+      .map-stage {
+        position: relative;
+        width: 100%;
+        min-height: 310px;
+        overflow: hidden;
+      }
+      .territory-map {
+        display: block;
+        width: 100%;
+        max-height: 420px;
+      }
+      .diagnostics summary {
+        min-height: 44px;
+        cursor: pointer;
+      }
+      .fatal-notice {
+        margin: 12px;
+        padding: 14px;
+        color: #111826;
+        background: #ffe1de;
+      }
+    </style>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <noscript>
+      <div class="fatal-notice">
+        IdleFront loaded, but JavaScript is disabled. Enable JavaScript to
+        reconnect and tap the map.
+      </div>
+    </noscript>
+
+    <div class="app-shell" id="appShell">
+      <header class="topbar">
+        <a class="brand" href="#map" aria-label="IdleFront home">
+          <span class="brand-mark" aria-hidden="true"
+            ><i></i><i></i><i></i
+          ></span>
+          <span>
+            <span class="overline">SEASON ZERO</span>
+            <strong>IdleFront</strong>
+          </span>
+        </a>
+        <div
+          class="connection-pill is-connecting"
+          id="connectionPill"
+          role="status"
+          aria-live="polite"
+        >
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="connectionLabel">Connecting</span>
+        </div>
+      </header>
+
+      <main>
+        <section class="welcome-row" aria-labelledby="welcomeTitle">
+          <div>
+            <p class="overline">YOUR SHIFT</p>
+            <h1 id="welcomeTitle">
+              <span id="playerGreeting">Welcome, Pathfinder</span
+              ><span class="wave" aria-hidden="true">↗</span>
+            </h1>
+            <p id="worldLine">
+              A persistent world that keeps moving when you step away.
+            </p>
+          </div>
+          <div class="season-clock" aria-label="Season time remaining">
+            <span>Season ends</span>
+            <strong id="seasonTimer">06d 23h</strong>
+          </div>
+        </section>
+
+        <section class="resource-grid" aria-label="Your resources">
+          <article class="resource-card supply-card">
+            <div class="resource-icon" aria-hidden="true">S</div>
+            <div>
+              <span>Supply</span>
+              <strong id="supplyValue">0</strong>
+            </div>
+            <div class="rate">
+              <span class="live-mini" aria-hidden="true"></span>
+              <span id="supplyRate">+0 / hr</span>
+            </div>
+          </article>
+          <article class="resource-card influence-card">
+            <div class="resource-icon" aria-hidden="true">I</div>
+            <div>
+              <span>Influence</span>
+              <strong id="influenceValue">0</strong>
+            </div>
+            <div
+              class="rate combo-readout"
+              id="comboReadout"
+              aria-live="polite"
+            >
+              <span>Tap streak</span>
+              <strong id="comboValue">×1</strong>
+            </div>
+          </article>
+        </section>
+
+        <section class="map-card" id="map" aria-labelledby="mapTitle">
+          <div class="map-card-head">
+            <div>
+              <p class="overline">
+                <span class="live-dot" aria-hidden="true"></span> LIVE PRESSURE
+                FIELD
+              </p>
+              <h2 id="mapTitle">The Shattered Reach</h2>
+            </div>
+            <button
+              class="icon-button"
+              id="reconnectButton"
+              type="button"
+              aria-label="Reconnect to live state"
+              title="Reconnect"
+            >
+              ↻
+            </button>
+          </div>
+
+          <div class="map-stage" id="mapStage">
+            <div class="map-grid" aria-hidden="true"></div>
+            <svg
+              class="territory-map"
+              id="territoryMap"
+              viewBox="0 0 360 336"
+              role="group"
+              aria-labelledby="svgMapTitle svgMapDesc"
+            >
+              <title id="svgMapTitle">The Shattered Reach territory map</title>
+              <desc id="svgMapDesc">
+                Twelve territories. Tap a rival territory to apply visible,
+                nonlethal pressure.
+              </desc>
+              <defs>
+                <filter
+                  id="softGlow"
+                  x="-30%"
+                  y="-30%"
+                  width="160%"
+                  height="160%"
+                >
+                  <feGaussianBlur stdDeviation="3" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+                <pattern
+                  id="territoryTexture"
+                  width="18"
+                  height="18"
+                  patternUnits="userSpaceOnUse"
+                >
+                  <path
+                    d="M0 18L18 0M-4 4L4-4M14 22L22 14"
+                    stroke="currentColor"
+                    stroke-opacity=".045"
+                    stroke-width="1"
+                  />
+                </pattern>
+              </defs>
+
+              <g
+                class="territory owner-you"
+                data-region-id="t01"
+                data-map-index="0"
+                role="button"
+                tabindex="0"
+                aria-label="Northlight, your protected territory"
+              >
+                <path
+                  class="territory-shape"
+                  d="M21 65L55 25L113 28L125 75L93 108L38 102L15 84Z"
+                />
+                <path
+                  class="territory-texture"
+                  d="M21 65L55 25L113 28L125 75L93 108L38 102L15 84Z"
+                />
+                <circle class="capital" cx="66" cy="68" r="4" />
+                <text class="region-label" x="66" y="88">YOU</text>
+              </g>
+              <g
+                class="territory owner-rival"
+                data-region-id="t02"
+                data-map-index="1"
+                role="button"
+                tabindex="0"
+                aria-label="Glassmere, rival territory, tap to pressure"
+              >
+                <path
+                  class="territory-shape"
+                  d="M113 28L169 14L207 38L199 87L159 110L125 75Z"
+                />
+                <path
+                  class="territory-texture"
+                  d="M113 28L169 14L207 38L199 87L159 110L125 75Z"
+                />
+                <circle class="capital" cx="164" cy="58" r="3" />
+                <text class="pressure-label" x="164" y="78">0</text>
+              </g>
+              <g
+                class="territory owner-rival"
+                data-region-id="t03"
+                data-map-index="2"
+                role="button"
+                tabindex="0"
+                aria-label="Ember Vale, rival territory, tap to pressure"
+              >
+                <path
+                  class="territory-shape"
+                  d="M207 38L265 24L300 54L291 98L248 116L199 87Z"
+                />
+                <path
+                  class="territory-texture"
+                  d="M207 38L265 24L300 54L291 98L248 116L199 87Z"
+                />
+                <circle class="capital" cx="253" cy="69" r="3" />
+                <text class="pressure-label" x="253" y="89">0</text>
+              </g>
+              <g
+                class="territory owner-neutral"
+                data-region-id="t04"
+                data-map-index="3"
+                role="button"
+                tabindex="0"
+                aria-label="Far Shoal, unclaimed territory"
+              >
+                <path
+                  class="territory-shape"
+                  d="M300 54L336 70L349 111L322 142L277 133L291 98Z"
+                />
+                <path
+                  class="territory-texture"
+                  d="M300 54L336 70L349 111L322 142L277 133L291 98Z"
+                />
+                <circle class="capital" cx="319" cy="99" r="3" />
+                <text class="pressure-label" x="319" y="119">0</text>
+              </g>
+              <g
+                class="territory owner-rival"
+                data-region-id="t05"
+                data-map-index="4"
+                role="button"
+                tabindex="0"
+                aria-label="Morrow Bank, rival territory, tap to pressure"
+              >
+                <path
+                  class="territory-shape"
+                  d="M38 102L93 108L117 150L91 190L36 179L13 137Z"
+                />
+                <path
+                  class="territory-texture"
+                  d="M38 102L93 108L117 150L91 190L36 179L13 137Z"
+                />
+                <circle class="capital" cx="66" cy="143" r="3" />
+                <text class="pressure-label" x="66" y="163">0</text>
+              </g>
+              <g
+                class="territory owner-rival"
+                data-region-id="t06"
+                data-map-index="5"
+                role="button"
+                tabindex="0"
+                aria-label="Quiet Crown, rival territory, tap to pressure"
+              >
+                <path
+                  class="territory-shape"
+                  d="M93 108L159 110L182 149L158 193L91 190L117 150Z"
+                />
+                <path
+                  class="territory-texture"
+                  d="M93 108L159 110L182 149L158 193L91 190L117 150Z"
+                />
+                <circle class="capital" cx="140" cy="147" r="3" />
+                <text class="pressure-label" x="140" y="167">0</text>
+              </g>
+              <g
+                class="territory owner-rival"
+                data-region-id="t07"
+                data-map-index="6"
+                role="button"
+                tabindex="0"
+                aria-label="Aster Divide, rival territory, tap to pressure"
+              >
+                <path
+                  class="territory-shape"
+                  d="M159 110L199 87L248 116L254 163L218 199L158 193L182 149Z"
+                />
+                <path
+                  class="territory-texture"
+                  d="M159 110L199 87L248 116L254 163L218 199L158 193L182 149Z"
+                />
+                <circle class="capital" cx="211" cy="145" r="3" />
+                <text class="pressure-label" x="211" y="165">0</text>
+              </g>
+              <g
+                class="territory owner-rival"
+                data-region-id="t08"
+                data-map-index="7"
+                role="button"
+                tabindex="0"
+                aria-label="Copper Strand, rival territory, tap to pressure"
+              >
+                <path
+                  class="territory-shape"
+                  d="M248 116L277 133L322 142L331 183L299 211L254 200L218 199L254 163Z"
+                />
+                <path
+                  class="territory-texture"
+                  d="M248 116L277 133L322 142L331 183L299 211L254 200L218 199L254 163Z"
+                />
+                <circle class="capital" cx="286" cy="166" r="3" />
+                <text class="pressure-label" x="286" y="186">0</text>
+              </g>
+              <g
+                class="territory owner-rival"
+                data-region-id="t09"
+                data-map-index="8"
+                role="button"
+                tabindex="0"
+                aria-label="Low Gardens, rival territory, tap to pressure"
+              >
+                <path
+                  class="territory-shape"
+                  d="M36 179L91 190L112 238L78 278L29 261L15 216Z"
+                />
+                <path
+                  class="territory-texture"
+                  d="M36 179L91 190L112 238L78 278L29 261L15 216Z"
+                />
+                <circle class="capital" cx="65" cy="225" r="3" />
+                <text class="pressure-label" x="65" y="245">0</text>
+              </g>
+              <g
+                class="territory owner-rival"
+                data-region-id="t10"
+                data-map-index="9"
+                role="button"
+                tabindex="0"
+                aria-label="Ivory Fen, rival territory, tap to pressure"
+              >
+                <path
+                  class="territory-shape"
+                  d="M91 190L158 193L179 235L160 286L105 301L78 278L112 238Z"
+                />
+                <path
+                  class="territory-texture"
+                  d="M91 190L158 193L179 235L160 286L105 301L78 278L112 238Z"
+                />
+                <circle class="capital" cx="137" cy="237" r="3" />
+                <text class="pressure-label" x="137" y="257">0</text>
+              </g>
+              <g
+                class="territory owner-rival"
+                data-region-id="t11"
+                data-map-index="10"
+                role="button"
+                tabindex="0"
+                aria-label="Violet Steppe, rival territory, tap to pressure"
+              >
+                <path
+                  class="territory-shape"
+                  d="M158 193L218 199L250 238L231 291L190 318L160 286L179 235Z"
+                />
+                <path
+                  class="territory-texture"
+                  d="M158 193L218 199L250 238L231 291L190 318L160 286L179 235Z"
+                />
+                <circle class="capital" cx="207" cy="244" r="3" />
+                <text class="pressure-label" x="207" y="264">0</text>
+              </g>
+              <g
+                class="territory owner-rival"
+                data-region-id="t12"
+                data-map-index="11"
+                role="button"
+                tabindex="0"
+                aria-label="Last Harbor, rival territory, tap to pressure"
+              >
+                <path
+                  class="territory-shape"
+                  d="M218 199L254 200L299 211L315 252L284 293L231 291L250 238Z"
+                />
+                <path
+                  class="territory-texture"
+                  d="M218 199L254 200L299 211L315 252L284 293L231 291L250 238Z"
+                />
+                <circle class="capital" cx="275" cy="247" r="3" />
+                <text class="pressure-label" x="275" y="267">0</text>
+              </g>
+            </svg>
+
+            <div class="tap-coach" id="tapCoach" aria-hidden="true">
+              <span class="tap-finger">●</span>
+              <span>Tap rival land</span>
+            </div>
+            <div
+              class="map-toast"
+              id="mapToast"
+              role="status"
+              aria-live="polite"
+            >
+              Tap a glowing rival territory
+            </div>
+          </div>
+
+          <div class="map-legend" aria-label="Map legend">
+            <span><i class="legend-you"></i>Your territory</span>
+            <span><i class="legend-rival"></i>Rival — tap to pressure</span>
+            <span><i class="legend-neutral"></i>Unclaimed</span>
+          </div>
+
+          <aside class="afk-shield">
+            <span class="shield-icon" aria-hidden="true">◇</span>
+            <div>
+              <strong>AFK Shield is always on</strong>
+              <p>
+                Pressure is visible, but taps can never eliminate a player or
+                take territory while they are away.
+              </p>
+            </div>
+          </aside>
+        </section>
+
+        <div class="desktop-rail">
+          <section class="activity-card" aria-labelledby="activityTitle">
+            <div class="section-head">
+              <div>
+                <p class="overline">WHILE YOU WERE AWAY</p>
+                <h2 id="activityTitle">Border activity</h2>
+              </div>
+              <span class="activity-count" id="activityCount">0 events</span>
+            </div>
+            <ul class="activity-list" id="activityList">
+              <li class="activity-empty">
+                <span class="activity-glyph">···</span>
+                <div>
+                  <strong>Listening for pressure</strong>
+                  <p>Reconnect to see who tapped your border.</p>
+                </div>
+              </li>
+            </ul>
+          </section>
+
+          <details class="diagnostics" id="diagnostics">
+            <summary>
+              <span><i id="diagnosticDot"></i> Connection diagnostics</span>
+              <span class="summary-hint">Tap to inspect</span>
+            </summary>
+            <div class="diagnostic-body">
+              <div class="diagnostic-grid">
+                <div><span>HTML</span><strong class="ok">Loaded</strong></div>
+                <div>
+                  <span>CSS</span><strong class="css-check">Missing</strong>
+                </div>
+                <div>
+                  <span>JavaScript</span><strong id="jsCheck">Starting</strong>
+                </div>
+                <div>
+                  <span>API</span><strong id="apiCheck">Connecting</strong>
+                </div>
+              </div>
+              <p id="diagnosticMessage">
+                The page shell loaded. Starting the reconnect client…
+              </p>
+              <dl class="diagnostic-meta">
+                <div>
+                  <dt>Player</dt>
+                  <dd id="diagPlayer">Not assigned</dd>
+                </div>
+                <div>
+                  <dt>Session</dt>
+                  <dd id="diagSession">Not assigned</dd>
+                </div>
+                <div>
+                  <dt>Last sync</dt>
+                  <dd id="diagSync">Never</dd>
+                </div>
+                <div>
+                  <dt>Watchdog</dt>
+                  <dd id="diagWatchdog">Server-side</dd>
+                </div>
+              </dl>
+              <button
+                class="secondary-button"
+                id="claimCommandButton"
+                type="button"
+              >
+                Take command on this device
+              </button>
+            </div>
+          </details>
+        </div>
+      </main>
+
+      <p class="telemetry-note">
+        Fair-play telemetry records tap timing, pointer type, page visibility,
+        and a quantized map position. The live authority retains raw receipts
+        for 14 days; scheduled encrypted recovery copies age out within a
+        further 14 days. Thresholds stay private, and permanent bans require
+        review.
+      </p>
+
+      <footer>
+        <span>IdleFront prototype</span>
+        <span>Nonlethal by design</span>
+      </footer>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
