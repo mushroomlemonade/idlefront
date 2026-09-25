@@ -16,6 +16,14 @@ a mahogany instrument bezel. Its project master is
 
 ## Run on a phone now
 
+Use the checkout from `https://github.com/mushroomlemonade/idlefront`.
+From its root, install root dependencies with `npm run inst` and mobile
+dependencies with `npm --prefix apps/mobile ci --ignore-scripts`.
+The repository move does not change Expo commands, app identifiers, or game URLs.
+Existing managed previews need the separate
+[startup migration review](../../docs/repository-migration.md), not a second Metro
+or backend process started alongside the running service.
+
 1. Keep the IdleFront web development server running on port `9000`.
 2. Copy `.env.example` to `.env.local` if the workstation IP has changed, then
    update `EXPO_PUBLIC_GAME_URL`.

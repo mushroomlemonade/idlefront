@@ -1,5 +1,16 @@
 # Idle Multiplayer OpenFront Fork — Handoff
 
+## Current repository handoff (September 24, 2026)
+
+Source of truth: `https://github.com/mushroomlemonade/idlefront`, branch `main`.
+The source publication checkout is
+`C:\Users\Administrator\Documents\checkout\idlefront-public`.
+Earlier sections are historical implementation notes; their branches, paths and
+runtime claims are not migration instructions. The new repository has independent
+history. Production cutover is assigned to the operator and has not been verified.
+See [repository migration](docs/repository-migration.md) for startup configuration,
+source-link verification and the old-repository visibility gate. Actions are disabled.
+
 ## September 5 larger-map / long-session preparation
 
 See `docs/large-world-playtest-2026-09-05.md` for the 72-million-tile benchmark,

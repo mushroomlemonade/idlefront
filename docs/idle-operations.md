@@ -131,6 +131,14 @@ the authority is moved to Postgres.
 
 ## CI, image publication, and deployment
 
+Current source is `https://github.com/mushroomlemonade/idlefront` on `main`.
+GitHub Actions are disabled in the new repository as of the source migration;
+the following describes the workflow's capabilities **if deliberately enabled**,
+not an active deployment integration. Production handover is operator-managed.
+Follow [repository migration](repository-migration.md) before changing checkout,
+image namespace, or source links. Existing service and persistent-data paths in
+this guide intentionally remain unchanged.
+
 `.github/workflows/idle-ci.yml` is fork-owned and has two paths:
 
 1. Every pull request/push installs with Node 24 and

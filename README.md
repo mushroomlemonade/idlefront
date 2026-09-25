@@ -12,9 +12,9 @@ its own product identity, interface, and persistent multiplayer foundation.
 OpenFront itself began as a fork/rewrite of WarFront.io. Credit to
 https://github.com/WarFrontIO.
 
-![CI](https://github.com/openfrontio/OpenFrontIO/actions/workflows/ci.yml/badge.svg)
-[![Crowdin](https://badges.crowdin.net/openfront-mls/localized.svg)](https://crowdin.com/project/openfront-mls)
-[![CLA assistant](https://cla-assistant.io/readme/badge/openfrontio/OpenFrontIO)](https://cla-assistant.io/openfrontio/OpenFrontIO)
+Canonical repository: [mushroomlemonade/idlefront](https://github.com/mushroomlemonade/idlefront).
+Report IdleFront issues and propose changes here, not in the upstream repository.
+GitHub Actions are currently disabled; upstream CI badges do not describe this build.
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Assets: CC BY-SA 4.0](https://img.shields.io/badge/Assets-CC%20BY--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-sa/4.0/)
 
@@ -57,6 +57,10 @@ independently licensed tracks are available.
 - A modern web browser (Chrome, Firefox, Edge, etc.)
 
 ## 🚀 Installation
+
+Moving an existing installation? Read [the repository migration guide](docs/repository-migration.md)
+first. The new repository has independent history: changing an old checkout's
+remote and running `git pull` is not a supported migration.
 
 1. **Clone the repository**
 
@@ -112,6 +116,12 @@ services. The fork intentionally does not ship convenience commands for
 connecting a modified client to OpenFront's hosted staging or production
 services. Set `DOMAIN`, deployment secrets, and observability properties to
 IdleFront-owned values when deploying.
+
+The repository move does not rename npm commands, service names, database paths,
+or network endpoints. For operator-managed hosting see
+[operations](docs/idle-operations.md); for Windows preview startup see
+[managed startup](docs/managed-dev-startup.md). Neither document implies that
+production has already moved to this repository.
 
 ## 🛠️ Development Tools
 

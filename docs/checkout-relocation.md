@@ -1,4 +1,15 @@
-# Active development checkout
+# Development checkout locations
+
+## Current source location
+
+Canonical repository: https://github.com/mushroomlemonade/idlefront (`main`).
+The clean-history publication checkout on the current Windows workstation is
+`C:\Users\Administrator\Documents\checkout\idlefront-public`.
+Runtime services have **not** been moved there by publishing the repository.
+Use [repository migration](repository-migration.md) for the operator's cutover;
+do not merge the old and new histories or run both against the same live data.
+
+## Historical September 10 runtime relocation
 
 As of September 10, 2026, the active checkout is:
 

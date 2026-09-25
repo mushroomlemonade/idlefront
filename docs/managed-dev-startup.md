@@ -1,5 +1,10 @@
 # Managed development startup
 
+Current source: [mushroomlemonade/idlefront](https://github.com/mushroomlemonade/idlefront).
+The September notes below describe the previous runtime, not a completed
+repository cutover. Follow [repository migration](repository-migration.md)
+before changing a running installation. Publishing source does not repoint tasks.
+
 Status: installed manually September 10; all four tasks verified Running.
 Public SDK 57 manifest, iOS bundle (3,887,888 bytes), icon and authenticated web
 page returned HTTP 200. Real iPhone loading and reboot recovery are not yet verified.
@@ -32,11 +37,20 @@ agent execution route for the rejected operation.
 Open PowerShell **as administrator using your normal Administrator Windows account**:
 
 ```powershell
-& 'C:\Users\Administrator\Documents\checkout\idlefront\scripts\install-dev-startup.ps1'
+# Run from the intended new checkout, after reviewing the migration checklist.
+& .\scripts\install-dev-startup.ps1 -NodePath (Get-Command node).Source
 ```
 
 No execution-policy override is included. If Windows rejects the script, retain
 the exact error for investigation rather than disabling that protection.
+
+The installer derives `Workspace` from its own location. It requires the existing
+protected runtime configuration, a compatible Node installation, and installed
+root/mobile dependencies; it is not a general fresh-machine bootstrap. It also
+reads the legacy `runtime.json`, so reconcile that configuration with the current
+`dev-runtime.json` before using it for a checkout migration. Preserve database
+paths, preview credentials and the stable Node runtime. Review scheduled Backup
+tasks separately. No tasks or configuration were changed by the documentation update.
 
 The installer registers startup tasks under `\OpenFrontIdle\` for Gateway, Expo,
 Web, and Backend. They run as the installing user with a limited S4U token, not
