@@ -36,7 +36,12 @@ describe("standalone fork license compliance", () => {
     const packageJson = read("package.json");
     const main = read("src/client/Main.ts");
     const store = read("src/client/Store.ts");
-    const deployment = read(".github/workflows/deploy.yml");
+    // The placeholder deployment workflow was removed from the canonical repo.
+    const deployment = fs.existsSync(
+      path.join(root, ".github/workflows/deploy.yml"),
+    )
+      ? read(".github/workflows/deploy.yml")
+      : "";
     const dockerfile = read("Dockerfile");
 
     expect(packageJson).not.toMatch(/api\.openfront\.(?:io|dev)/);

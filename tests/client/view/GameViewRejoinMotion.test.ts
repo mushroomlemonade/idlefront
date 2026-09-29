@@ -40,6 +40,12 @@ describe("late spectator motion", () => {
         terrainByte: () => 0,
       }),
       ticks: () => 42,
+      inSpawnPhase: () => false,
+      width: () => 10,
+      config: () => ({ gameConfig: () => ({}) }),
+      unit: (id: number) => ({
+        type: () => (id === 7 ? UnitType.TradeShip : UnitType.Warship),
+      }),
       allPlayers: () => [{ toFullUpdate: () => makePlayerUpdate() }],
       units: () => [boat, warship].map((u) => ({ toUpdate: () => u })),
     };
