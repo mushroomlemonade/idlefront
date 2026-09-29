@@ -13,7 +13,9 @@ import {
   GameMode,
   GameType,
 } from "../../../src/core/game/Game";
+import { pressurePacingForDuration } from "../../../src/core/PressurePacing";
 import type { GameConfig } from "../../../src/core/Schemas";
+import { WORLD_PRESETS } from "../../../src/core/WorldPresets";
 import type {
   MasterCreateManagedGame,
   WorkerManagedGameReady,
@@ -81,9 +83,14 @@ describe("persistent-world runtime bridge", () => {
     return { host, gameplayHash, world };
   }
 
-  it.each(["quickplay", "longplay", "idlefront"] as const)(
-    "enables strategic nations for every new %s runtime",
-    async (gamePreset) => {
+  it.each(
+    (["quickplay", "longplay", "idlefront"] as const).flatMap((gamePreset) =>
+      [3000, 16000].map((bots) => ({ gamePreset, bots })),
+    ),
+  )(
+    "enables strategic nations for new $gamePreset runtime with stress setting $bots",
+    async ({ gamePreset, bots }) => {
+      vi.stubEnv("IDLE_LONGPLAY_STRESS_BOTS", String(bots));
       const host = service.createGuestSession({
         displayName: "Strategy Tester",
       });
@@ -94,7 +101,7 @@ describe("persistent-world runtime bridge", () => {
       const created = service.createWorld(host.bearerToken, {
         name: "Strategy Preview",
         gamePreset,
-        targetDuration: "1h",
+        targetDuration: WORLD_PRESETS[gamePreset].duration,
         access: "private",
         mode: "ffa",
         maxHumans: 4,
@@ -122,6 +129,52 @@ describe("persistent-world runtime bridge", () => {
         "v2",
       );
       expect(dispatch.mock.calls[0][0].gameConfig.nationStrategy).toBe("v2");
+      const corridors = dispatch.mock.calls[0][0].gameConfig.tradeCorridors;
+      if (gamePreset === "quickplay") expect(corridors).toBeUndefined();
+      else {
+        expect(corridors).toMatchObject({
+          version: "v1",
+          initialTrips: 0.25,
+          matureTrips: 1,
+        });
+        expect(
+          repository.getRuntime(world.id)?.gameConfig.tradeCorridors,
+        ).toEqual(corridors);
+      }
+      expect(dispatch.mock.calls[0][0].gameConfig.bots).toBe(
+        gamePreset === "longplay"
+          ? bots
+          : gamePreset === "quickplay"
+            ? 200
+            : 2000,
+      );
+      expect(dispatch.mock.calls[0][0].gameConfig.longplayStressTest).toBe(
+        gamePreset === "longplay" ? "owner16-v1" : undefined,
+      );
+      vi.stubEnv("IDLE_LONGPLAY_STRESS_BOTS", "0");
+      await new PersistentWorldRuntimeBridge(
+        repository,
+        { gameConfig: async () => UPSTREAM_CONFIG } as unknown as MapPlaylist,
+        dispatch,
+      ).ensure(world);
+      expect(dispatch.mock.calls[1][0].gameConfig).toEqual(
+        dispatch.mock.calls[0][0].gameConfig,
+      );
+      expect(dispatch.mock.calls[0][0].gameConfig).toMatchObject({
+        gameMap: WORLD_PRESETS[gamePreset].map,
+        continuousPressure: "v1",
+        fleetAutomation: "v26.3",
+        warshipPatrolScheduling: "v1",
+        passiveWildernessExpansion: true,
+        donateTroops: true,
+        donateGold: true,
+        pressureGraceSeconds: WORLD_PRESETS[gamePreset].pressureGraceSeconds,
+        allianceProtectionMinutes:
+          WORLD_PRESETS[gamePreset].allianceProtectionMinutes,
+        pressurePacing: pressurePacingForDuration(
+          WORLD_PRESETS[gamePreset].duration,
+        ),
+      });
     },
   );
 

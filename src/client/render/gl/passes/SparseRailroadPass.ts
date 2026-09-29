@@ -13,6 +13,7 @@ layout(location = 2) in vec2 aOwnerWater;
 uniform mat3 uCamera;
 uniform float uZoom;
 uniform float uThickness;
+uniform float uTrafficMode;
 out float vSide;
 flat out float vOwner;
 flat out float vWater;
@@ -23,7 +24,7 @@ void main() {
   vec2 normal = vec2(-direction.y, direction.x);
   // Preserve a tactile track width at close zoom and at least ~1.7 physical
   // pixels at ordinary play zoom. Geometry remains sparse and camera-local.
-  float halfWidth = max(0.105 * uThickness, 0.85 / max(uZoom, 0.001));
+  float halfWidth = uTrafficMode > .5 ? .5 / max(uZoom,.001) : max(0.105 * uThickness, 0.85 / max(uZoom, 0.001));
   vec2 world = mix(start, end, aCorner.x) + normal * aCorner.y * halfWidth;
   vec3 clip = uCamera * vec3(world, 1.0);
   gl_Position = vec4(clip.xy, 0.0, 1.0);
@@ -112,6 +113,10 @@ export function buildSparseRailroadSegments(
  * never allocates a mapWidth × mapHeight texture; cost follows rail length.
  */
 export class SparseRailroadPass {
+  private trafficMode = false;
+  setTrafficMode(enabled: boolean): void {
+    this.trafficMode = enabled;
+  }
   private readonly program: WebGLProgram;
   private readonly vao: WebGLVertexArrayObject;
   private readonly quadBuffer: WebGLBuffer;
@@ -200,12 +205,26 @@ export class SparseRailroadPass {
     if (fade <= 0) return;
     const gl = this.gl;
     gl.useProgram(this.program);
-    gl.uniformMatrix3fv(gl.getUniformLocation(this.program, "uCamera"), false, camera);
+    gl.uniformMatrix3fv(
+      gl.getUniformLocation(this.program, "uCamera"),
+      false,
+      camera,
+    );
     gl.uniform1f(gl.getUniformLocation(this.program, "uZoom"), zoom);
-    gl.uniform1f(gl.getUniformLocation(this.program, "uThickness"), rs.railThickness);
+    gl.uniform1f(
+      gl.getUniformLocation(this.program, "uThickness"),
+      rs.railThickness,
+    );
+    gl.uniform1f(
+      gl.getUniformLocation(this.program, "uTrafficMode"),
+      this.trafficMode ? 1 : 0,
+    );
     gl.uniform1f(gl.getUniformLocation(this.program, "uAlpha"), rs.railAlpha);
     gl.uniform1f(gl.getUniformLocation(this.program, "uFade"), fade);
-    gl.uniform1f(gl.getUniformLocation(this.program, "uLocalPlayer"), this.localPlayerID);
+    gl.uniform1f(
+      gl.getUniformLocation(this.program, "uLocalPlayer"),
+      this.localPlayerID,
+    );
     gl.uniform3f(
       gl.getUniformLocation(this.program, "uLocalColor"),
       this.localColor[0],

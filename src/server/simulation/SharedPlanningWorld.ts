@@ -6,7 +6,7 @@ export interface SharedPlanningData {
   height: number;
   initialFallout: number;
   terrain: Uint8Array<SharedArrayBuffer>;
-  state: Uint16Array<SharedArrayBuffer>;
+  state: Uint16Array<SharedArrayBuffer> | Uint32Array<SharedArrayBuffer>;
   control: Int32Array<SharedArrayBuffer>;
 }
 export interface PlanningEpoch {
@@ -34,14 +34,21 @@ export class SharedPlanningWorld {
     const count = source.width() * source.height();
     if (!source.observeState || !source.observeTerrain)
       throw new Error("Map mutation hooks unavailable");
-    if (!Number.isSafeInteger(count) || count < 1 || count * 3 + 4 > maxBytes)
+    const wide = source.ownerIdBits === 16;
+    if (
+      !Number.isSafeInteger(count) ||
+      count < 1 ||
+      count * (wide ? 5 : 3) + 4 > maxBytes
+    )
       throw new Error("Shared planning world exceeds memory budget");
     this.data = {
       width: source.width(),
       height: source.height(),
       initialFallout: source.numTilesWithFallout(),
       terrain: new Uint8Array(new SharedArrayBuffer(count)),
-      state: new Uint16Array(new SharedArrayBuffer(count * 2)),
+      state: wide
+        ? new Uint32Array(new SharedArrayBuffer(count * 4))
+        : new Uint16Array(new SharedArrayBuffer(count * 2)),
       control: new Int32Array(new SharedArrayBuffer(4)),
     };
     for (const page of source.tilePages()) {
@@ -109,10 +116,17 @@ export class SharedPlanningWorld {
  * captured per epoch rather than reconstructed by scanning the whole world.
  */
 export function sharedPlanningReader(data: SharedPlanningData) {
-  const decoded = new GameMapImpl(data.width, data.height, data.terrain, 0, {
-    state: data.state,
-    falloutTiles: data.initialFallout,
-  });
+  const decoded = new GameMapImpl(
+    data.width,
+    data.height,
+    data.terrain,
+    0,
+    {
+      state: data.state,
+      falloutTiles: data.initialFallout,
+    },
+    data.state instanceof Uint32Array,
+  );
   let snapshot: PlanningEpoch | undefined;
   const map: WildernessAttackInput["map"] = {
     ownerID: decoded.ownerID.bind(decoded),

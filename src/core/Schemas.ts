@@ -25,6 +25,7 @@ import {
 } from "./game/Game";
 import { PressurePacingSchema } from "./PressurePacing";
 import { ArchivedPlayerStatsSchema, PlayerStatsSchema } from "./StatsSchemas";
+import { TradeCorridorsSchema } from "./TradeCorridors";
 import { flattenedEmojiTable } from "./Util";
 
 export type GameID = string;
@@ -323,6 +324,7 @@ export const DoomsdayClockConfigSchema = z.object({
 });
 
 export const GameConfigSchema = z.object({
+  tradeCorridors: TradeCorridorsSchema.optional(),
   // Transport/runtime selection only; executions continue using the same rules.
   serverSimulation: z.boolean().optional(),
   // Version-pinned discovery rules; absent on existing worlds.
@@ -367,9 +369,10 @@ export const GameConfigSchema = z.object({
     .min(1)
     .max(400)
     .or(z.enum(["default", "disabled"])),
-  // Seamless worlds retain independent stock bots. The packed owner ID has
-  // 12 bits, so runtime configuration must keep the complete roster < 4096.
-  bots: z.number().int().min(0).max(2000),
+  // Counts above 2000 require the explicit 16-bit longplay runtime capability.
+  bots: z.number().int().min(0).max(16000),
+  // Explicit replay/runtime capability, emitted only by opt-in longplay worlds.
+  longplayStressTest: z.literal("owner16-v1").optional(),
   infiniteGold: z.boolean(),
   infiniteTroops: z.boolean(),
   instantBuild: z.boolean(),
@@ -402,6 +405,8 @@ export const GameConfigSchema = z.object({
   pressurePacing: PressurePacingSchema.optional(),
   fleetAutomation: z.literal("v26.3").optional(),
   nationStrategy: z.enum(["v1", "v2"]).optional(),
+  // Opt-in on new worlds: failed patrol retry timing changes deterministic play.
+  warshipPatrolScheduling: z.literal("v1").optional(),
   continuousPressure: z.literal("v1").optional(),
   allianceProtectionMinutes: z.number().int().min(1).max(10080).optional(),
   pressureGraceSeconds: z.number().int().min(0).max(86400).optional(),

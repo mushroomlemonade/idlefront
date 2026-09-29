@@ -57,6 +57,7 @@ import {
 } from "./GameUpdates";
 import { nationPersonality } from "./NationPersonality";
 import { OrderedRoster } from "./OrderedRoster";
+import { invalidatePortRoster } from "./PortTradeIndex";
 import { hasPressureGrace } from "./PressureDiplomacy";
 import { pressureHash, pressureView } from "./PressurePopulation";
 import { ReadonlyTileSet, TileSet } from "./TileSet";
@@ -131,6 +132,10 @@ export class PlayerImpl implements Player {
   }
   private unitsByType = new Map<UnitType, Set<Unit>>();
   private ownedUnitLevels = new Map<UnitType, number>();
+  private pricedUnitCounts = new Map<UnitType, number>();
+  invalidateUnitPriceCount(type: UnitType): void {
+    this.pricedUnitCounts.delete(type);
+  }
   public _tiles = new TileSet();
 
   public pastOutgoingAllianceRequests: AllianceRequest[] = [];
@@ -396,23 +401,30 @@ export class PlayerImpl implements Player {
   /** Maintain insertion order on build, capture and deletion. Typed queries
    * return copies; the index is never exposed to callers that sort results. */
   addOwnedUnit(unit: Unit): void {
+    if (unit.type() === UnitType.Port) invalidatePortRoster(this.mg);
+    this.invalidateUnitPriceCount(unit.type());
     this.ownedUnits.add(unit);
     const type = unit.type();
     const bucket = this.unitsByType.get(type);
     if (bucket) bucket.add(unit);
     else this.unitsByType.set(type, new Set([unit]));
+    this.mg.unitTypeOwners.add(type, this);
     this.ownedUnitLevels.set(type, this.unitCount(type) + unit.level());
   }
 
   removeOwnedUnit(unit: Unit): void {
+    if (unit.type() === UnitType.Port) invalidatePortRoster(this.mg);
+    this.invalidateUnitPriceCount(unit.type());
     this.ownedUnits.delete(unit);
     const type = unit.type(),
       bucket = this.unitsByType.get(type);
     if (!bucket?.delete(unit)) return;
+    if (bucket.size === 0) this.mg.unitTypeOwners.remove(type, this);
     this.ownedUnitLevels.set(type, this.unitCount(type) - unit.level());
   }
 
   onOwnedUnitLevelChanged(unit: Unit, delta: number): void {
+    this.invalidateUnitPriceCount(unit.type());
     if (this.unitsByType.get(unit.type())?.has(unit))
       this.ownedUnitLevels.set(
         unit.type(),
@@ -501,6 +513,8 @@ export class PlayerImpl implements Player {
 
   // Count of units owned by the player, including construction
   unitsOwned(type: UnitType): number {
+    const cached = this.pricedUnitCounts.get(type);
+    if (cached !== undefined) return cached;
     let total = 0;
     for (const unit of this.unitsByType.get(type) ?? []) {
       if (unit.isUnderConstruction()) {
@@ -509,6 +523,7 @@ export class PlayerImpl implements Player {
         total += unit.level();
       }
     }
+    this.pricedUnitCounts.set(type, total);
     return total;
   }
 

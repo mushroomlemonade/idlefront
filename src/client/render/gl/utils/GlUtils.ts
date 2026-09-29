@@ -2,13 +2,22 @@
  * WebGL2 utility functions: shader compilation, texture creation, VAO helpers.
  */
 
+import { getPaletteSize } from "./ColorUtils";
+import {
+  foldNameTextureLookups,
+  foldOwnerTextureLookups,
+} from "./OwnerTextureLayout";
+
 export function compileShader(
   gl: WebGL2RenderingContext,
   type: number,
   source: string,
 ): WebGLShader {
   const shader = gl.createShader(type)!;
-  gl.shaderSource(shader, source);
+  gl.shaderSource(
+    shader,
+    foldNameTextureLookups(foldOwnerTextureLookups(source, getPaletteSize())),
+  );
   gl.compileShader(shader);
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
     const log = gl.getShaderInfoLog(shader) ?? "";

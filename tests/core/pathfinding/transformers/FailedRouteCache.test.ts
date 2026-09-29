@@ -19,7 +19,7 @@ describe("exact failed water route cache", () => {
     cache.findPath(1, 9); // later graph rebuild
     expect(findPath).toHaveBeenCalledTimes(5);
   });
-  it("does not cache successes, exceptions, or multi-source queries", () => {
+  it("does not cache successes or exceptions; reuses exact ordered multi-source failures", () => {
     const route = [1, 2, 3];
     const findPath = vi.fn<(...args: any[]) => number[] | null>(() => route);
     const cache = new FailedRouteCache({ findPath }, () => "0");
@@ -33,6 +33,9 @@ describe("exact failed water route cache", () => {
     });
     expect(() => cache.findPath(1, 4)).toThrow("failure");
     expect(() => cache.findPath(1, 4)).toThrow("failure");
+    expect(findPath).toHaveBeenCalledTimes(5);
+    findPath.mockImplementation(() => null);
+    cache.findPath([2, 1], 3);
     expect(findPath).toHaveBeenCalledTimes(6);
   });
   it("bounds memory and retries evicted failures", () => {

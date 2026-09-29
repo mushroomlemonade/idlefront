@@ -1,3 +1,4 @@
+import { ownerFromTileState } from "../../../../core/game/OwnerIdCodec";
 import type { PlayerState, PlayerStatusData, UnitState } from "../../types";
 import { NUKE_TYPES, UT_MIRV_WARHEAD } from "../../types";
 
@@ -6,8 +7,6 @@ const NUKE_ACTIVE_TYPES: ReadonlySet<string> = new Set([
   ...NUKE_TYPES,
   UT_MIRV_WARHEAD,
 ]);
-
-const OWNER_MASK = 0xfff;
 
 export interface ComputePlayerStatusOptions {
   /** Optional pre-classified IDs avoids scanning stationary structures. */
@@ -26,7 +25,7 @@ export interface ComputePlayerStatusOptions {
    * Used to determine if a nuke's target tile is owned by the local player
    * for the `nukeTargetsMe` flag. If omitted, `nukeTargetsMe` stays false.
    */
-  tileState?: Uint16Array;
+  tileState?: Uint16Array | Uint32Array;
   /**
    * Current game tick to evaluate alliance progress.
    */
@@ -102,7 +101,7 @@ export function computePlayerStatus(
       localPlayerSmallID > 0 &&
       tileState !== undefined &&
       u.targetTile !== null &&
-      (tileState[u.targetTile] & OWNER_MASK) === localPlayerSmallID
+      ownerFromTileState(tileState[u.targetTile]) === localPlayerSmallID
     ) {
       nukeTargetsMeOwners.add(u.ownerID);
     }

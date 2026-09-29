@@ -348,6 +348,7 @@ export class Config {
   tradeShipSpawnRate(
     tradeShipSpawnRejections: number,
     numTradeShips: number,
+    mapArea?: number,
   ): number {
     // Trade density is an upstream rule expressed for the 1× world. Expanded
     // worlds have proportionally more ocean, ports and travel distance, so a
@@ -355,11 +356,15 @@ export class Config {
     // sigmoid (not just its midpoint) by map area to preserve the same ships
     // per geographic area and the same-shaped saturation curve.
     const mapScale =
-      this._gameConfig.gameMap === "Expanded Earth Ultra"
-        ? 16
-        : this._gameConfig.gameMap === "Expanded Earth XL"
-          ? 4
-          : 1;
+      this._gameConfig.tradeCorridors?.economy === "area-v1" &&
+      mapArea !== undefined
+        ? // Earth 1x metadata is 4108 x 1948. Use loaded dimensions, not map names.
+          Math.max(1, mapArea / (4108 * 1948))
+        : this._gameConfig.gameMap === "Expanded Earth Ultra"
+          ? 16
+          : this._gameConfig.gameMap === "Expanded Earth XL"
+            ? 4
+            : 1;
     const trafficMultiplier = this._gameConfig.tradeShipTrafficMultiplier ?? 1;
     const tradeScale = mapScale * trafficMultiplier;
     const decayRate = Math.LN2 / (50 * tradeScale);

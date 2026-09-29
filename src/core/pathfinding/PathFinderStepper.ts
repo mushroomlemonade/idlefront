@@ -21,7 +21,7 @@ export class PathFinderStepper<T> implements SteppingPathFinder<T> {
   // Numeric paths (TileRefs) are stored as a Uint32Array: steppers hold their
   // whole path for the unit's entire journey, and paths across large maps run
   // to thousands of nodes, so halving the per-node size matters in aggregate.
-  private path: T[] | Uint32Array | null = null;
+  private path: Readonly<ArrayLike<T>> | Uint32Array | null = null;
   private pathIndex = 0;
   private lastTo: T | null = null;
 
@@ -61,9 +61,11 @@ export class PathFinderStepper<T> implements SteppingPathFinder<T> {
 
     // Compute path if not cached
     if (this.path === null) {
-      let path: T[] | null;
+      let path: Readonly<ArrayLike<T>> | null;
       try {
-        path = this.finder.findPath(from, to);
+        path = this.finder.findSharedPath
+          ? this.finder.findSharedPath(from, to)
+          : this.finder.findPath(from, to);
       } catch (err) {
         console.error("PathFinder threw an error during findPath", err);
         return { status: PathStatus.NOT_FOUND };
@@ -74,8 +76,10 @@ export class PathFinderStepper<T> implements SteppingPathFinder<T> {
       }
 
       this.path =
-        path.length > 0 && typeof path[0] === "number"
-          ? new Uint32Array(path as number[])
+        !this.finder.findSharedPath &&
+        path.length > 0 &&
+        typeof path[0] === "number"
+          ? new Uint32Array(path as unknown as ArrayLike<number>)
           : path;
       this.pathIndex = 0;
       if (path.length > 0 && this.config.equals(path[0], from)) {
@@ -114,7 +118,9 @@ export class PathFinderStepper<T> implements SteppingPathFinder<T> {
    */
   pathAfterNext(): T[] | Uint32Array | null {
     if (this.path === null || this.pathIndex === 0) return null;
-    return this.path.slice(this.pathIndex - 1);
+    return this.path instanceof Uint32Array
+      ? this.path.slice(this.pathIndex - 1)
+      : Array.from(this.path).slice(this.pathIndex - 1);
   }
 
   /** Computes a one-shot route without changing the cached route. */

@@ -22,6 +22,13 @@ export interface TickResult {
   tileDeltaCount: number;
   motionPlanBytes: number;
   unitUpdateCount: number;
+  entityCounts?: {
+    warships: number;
+    tradeShips: number;
+    transports: number;
+    sams: number;
+  };
+  workerMemory?: NodeJS.MemoryUsage;
   stats?: LiveStats;
   win?: WinUpdate;
 }

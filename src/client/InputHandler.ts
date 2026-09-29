@@ -1,6 +1,7 @@
 import { EventBus, GameEvent } from "../core/EventBus";
 import { PlayerBuildableUnitType, UnitType } from "../core/game/Game";
 import { UserSettings } from "../core/game/UserSettings";
+import { NativeMapScroll } from "./NativeMapScroll";
 import { Platform } from "./Platform";
 import { UIState } from "./UIState";
 import { ReplaySpeedMultiplier } from "./utilities/ReplaySpeedMultiplier";
@@ -235,6 +236,7 @@ export class InputHandler {
   private lastGestureScale: number | null = null;
 
   private pointerDown: boolean = false;
+  private nativeMapScroll: NativeMapScroll | null = null;
 
   private alternateView = false;
 
@@ -272,6 +274,20 @@ export class InputHandler {
   ) {}
 
   initialize() {
+    if (NativeMapScroll.supported()) {
+      this.nativeMapScroll = new NativeMapScroll(
+        this.canvas,
+        (x, y) => this.eventBus.emit(new DragEvent(x, y)),
+        (x, y, delta) => this.eventBus.emit(new ZoomEvent(x, y, delta)),
+        () =>
+          !!this.uiState.ghostStructure ||
+          document.body.classList.contains("idlefront-dashboard-active"),
+        () => this.longPressActive || this.selectionBoxActive,
+        () => {
+          this.suppressNextTap = true;
+        },
+      );
+    }
     this.keybinds = this.userSettings.keybinds(Platform.isMac);
 
     this.addKeybindAndEvent(this.keybinds.boatAttack, () => {
@@ -811,6 +827,15 @@ export class InputHandler {
     }
     const wasLongPress = this.longPressActive;
     this.longPressActive = false;
+    // Native scrolling cancels pointer delivery when it takes over the drag.
+    // Cancellation must never become an attack, selection, or radial-menu tap.
+    if (event.type === "pointercancel") {
+      if (this.selectionBoxActive)
+        this.eventBus.emit(new WarshipSelectionBoxCancelEvent());
+      this.selectionBoxActive = false;
+      this.canvas.style.cursor = "";
+      return;
+    }
     if (wasLongPress) {
       this.canvas.style.cursor = "";
       // If long-press fired but no drag happened (selectionBoxActive is false),
@@ -913,6 +938,7 @@ export class InputHandler {
    * inverting that gives the delta reproducing the pinch ratio exactly.
    */
   private onGestureChange(event: WebKitGestureEvent) {
+    if (this.nativeMapScroll) return; // Native surface's touch events own iOS pinch.
     if (this.lastGestureScale === null) return;
 
     const ratio = event.scale / this.lastGestureScale;
@@ -988,12 +1014,13 @@ export class InputHandler {
           ),
         );
       } else {
-        this.eventBus.emit(new DragEvent(deltaX, deltaY));
+        if (!this.nativeMapScroll || event.pointerType !== "touch")
+          this.eventBus.emit(new DragEvent(deltaX, deltaY));
       }
 
       this.lastPointerX = event.clientX;
       this.lastPointerY = event.clientY;
-    } else if (this.pointers.size === 2) {
+    } else if (this.pointers.size === 2 && !this.nativeMapScroll) {
       const currentPinchDistance = this.getPinchDistance();
       const pinchDelta = currentPinchDistance - this.lastPinchDistance;
 
@@ -1185,6 +1212,8 @@ export class InputHandler {
   }
 
   destroy() {
+    this.nativeMapScroll?.destroy();
+    this.nativeMapScroll = null;
     if (this.moveInterval !== null) {
       clearInterval(this.moveInterval);
     }

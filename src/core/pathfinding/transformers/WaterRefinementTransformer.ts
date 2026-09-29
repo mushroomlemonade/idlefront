@@ -23,17 +23,27 @@ export class WaterRefinementTransformer implements PathFinder<TileRef> {
   constructor(
     private inner: PathFinder<TileRef>,
     private map: WaterRefinementMap,
+    terrainRevision?: () => string,
   ) {
-    this.repair = new WaterRepairSearch(map);
+    this.repair = new WaterRepairSearch(map, true, terrainRevision);
   }
 
   findPath(from: TileRef | TileRef[], to: TileRef): TileRef[] | null {
+    if (this.provenDisconnected(from, to)) return null;
     const route = this.inner.findPath(from, to);
     return this.refine(route, from, to);
   }
 
   coarsePath(from: TileRef | TileRef[], to: TileRef): TileRef[] | null {
+    if (this.provenDisconnected(from, to)) return null;
     return this.inner.findPath(from, to);
+  }
+
+  provenDisconnected(from: TileRef | TileRef[], to: TileRef): boolean {
+    return this.repair.provenDisconnected(
+      Array.isArray(from) ? from : [from],
+      to,
+    );
   }
 
   refine(
@@ -41,6 +51,7 @@ export class WaterRefinementTransformer implements PathFinder<TileRef> {
     from: TileRef | TileRef[],
     to: TileRef,
   ): TileRef[] | null {
+    if (this.provenDisconnected(from, to)) return null;
     if (!route?.length) return null;
     const starts = Array.isArray(from) ? from : [from];
     const wet = (t: TileRef) => this.map.isWater(t);

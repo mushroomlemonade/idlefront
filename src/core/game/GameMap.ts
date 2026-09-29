@@ -1,4 +1,10 @@
 import { Cell, TerrainType } from "./Game";
+import {
+  checkedTileState,
+  ownerFromTileState,
+  stateWithOwner,
+  type TileStateArray,
+} from "./OwnerIdCodec";
 
 export type TileRef = number;
 
@@ -18,10 +24,11 @@ export interface GameMapTilePage {
   readonly width: number;
   readonly height: number;
   readonly terrain: Uint8Array;
-  readonly state: Uint16Array;
+  readonly state: TileStateArray;
 }
 
 export interface GameMap {
+  readonly ownerIdBits?: 12 | 16;
   ref(x: number, y: number): TileRef;
   isValidRef(ref: TileRef): boolean;
   x(ref: TileRef): number;
@@ -95,17 +102,16 @@ export interface GameMap {
   ): Set<TileRef>;
 
   /**
-   * Returns the packed per-tile state as an unsigned 16-bit value (`0..65535`).
-   *
-   * Backed by a `Uint16Array` in `GameMapImpl`, so callers must treat this as `uint16`.
+   * Returns packed tile state: legacy low 16 bits, plus owner-extension bits
+   * 16..19 in an explicitly enabled wide-owner map. Use OwnerIdCodec to decode.
    */
   tileState(tile: TileRef): number;
 
   /**
    * Applies a packed per-tile state value.
    *
-   * `state` must be an unsigned 16-bit value (`0..65535`). Implementations may
-   * store this in a `Uint16Array` and will truncate higher bits if provided.
+   * Accepts the wire word from packTileState (including terrain). Legacy maps
+   * reject owner extensions rather than silently truncating another owner.
    *
    * Returns `true` when the terrain byte changed (land/water/shoreline/magnitude).
    */
@@ -123,7 +129,7 @@ export interface GameMap {
    *   bit   13:  fallout
    *   bit   14:  defense bonus
    */
-  tileStateBuffer(): Uint16Array;
+  tileStateBuffer(): TileStateArray;
 
   /**
    * Stable row-major storage pages. Classic maps expose one page; seamless
@@ -144,10 +150,13 @@ export interface GameMap {
 }
 
 export class GameMapImpl implements GameMap {
+  get ownerIdBits(): 12 | 16 {
+    return this.wideOwners ? 16 : 12;
+  }
   private _numTilesWithFallout = 0;
 
   private readonly terrain: Uint8Array; // Immutable terrain data
-  private readonly state: Uint16Array; // Mutable game state
+  private readonly state: TileStateArray; // Mutable game state
   private readonly width_: number;
   private readonly height_: number;
 
@@ -165,12 +174,20 @@ export class GameMapImpl implements GameMap {
   observeState(listener: (tile: TileRef) => void): () => void {
     this.stateObservers.add(listener);
     const refresh = () => {
-      this.stateObserver = this.stateObservers.size === 0 ? undefined :
-        this.stateObservers.size === 1 ? this.stateObservers.values().next().value :
-        (tile) => { for (const callback of this.stateObservers) callback(tile); };
+      this.stateObserver =
+        this.stateObservers.size === 0
+          ? undefined
+          : this.stateObservers.size === 1
+            ? this.stateObservers.values().next().value
+            : (tile) => {
+                for (const callback of this.stateObservers) callback(tile);
+              };
     };
     refresh();
-    return () => { this.stateObservers.delete(listener); refresh(); };
+    return () => {
+      this.stateObservers.delete(listener);
+      refresh();
+    };
   }
 
   observeTerrain(listener: (tile: TileRef) => void): () => void {
@@ -196,7 +213,6 @@ export class GameMapImpl implements GameMap {
   private static readonly IMPASSABLE_MAGNITUDE = 31;
 
   // State bits (Uint16Array)
-  private static readonly PLAYER_ID_MASK = 0xfff;
   private static readonly FALLOUT_BIT = 13;
   private static readonly DEFENSE_BONUS_BIT = 14;
   // Bit 15 still reserved
@@ -206,7 +222,8 @@ export class GameMapImpl implements GameMap {
     height: number,
     terrainData: Uint8Array,
     private numLandTiles_: number,
-    initialState?: { state: Uint16Array; falloutTiles: number },
+    initialState?: { state: TileStateArray; falloutTiles: number },
+    private readonly wideOwners = false,
   ) {
     if (terrainData.length !== width * height) {
       throw new Error(
@@ -218,12 +235,26 @@ export class GameMapImpl implements GameMap {
     this.terrain = terrainData;
     if (initialState && initialState.state.length !== width * height)
       throw new Error("State data length does not match map dimensions");
-    if (initialState && (!Number.isSafeInteger(initialState.falloutTiles) ||
-        initialState.falloutTiles < 0 || initialState.falloutTiles > width * height))
+    if (
+      initialState &&
+      (!Number.isSafeInteger(initialState.falloutTiles) ||
+        initialState.falloutTiles < 0 ||
+        initialState.falloutTiles > width * height)
+    )
       throw new Error("Invalid initial fallout count");
     // Optional backing storage supports read-only computational worker views.
     // Default simulation construction remains an empty, owned state buffer.
-    this.state = initialState?.state ?? new Uint16Array(width * height);
+    if (
+      initialState &&
+      !wideOwners &&
+      initialState.state instanceof Uint32Array
+    )
+      throw new Error("Extended state requires explicit wide-owner capability");
+    this.state =
+      initialState?.state ??
+      (wideOwners
+        ? new Uint32Array(width * height)
+        : new Uint16Array(width * height));
     this._numTilesWithFallout = initialState?.falloutTiles ?? 0;
     this.yToRef = new Int32Array(height);
     for (let y = 0; y < height; y++) {
@@ -367,7 +398,7 @@ export class GameMapImpl implements GameMap {
 
   // State getters and setters (mutable)
   ownerID(ref: TileRef): number {
-    return this.state[ref] & GameMapImpl.PLAYER_ID_MASK;
+    return ownerFromTileState(this.state[ref]);
   }
 
   hasOwner(ref: TileRef): boolean {
@@ -375,13 +406,11 @@ export class GameMapImpl implements GameMap {
   }
 
   setOwnerID(ref: TileRef, playerId: number): void {
-    if (playerId > GameMapImpl.PLAYER_ID_MASK) {
-      throw new Error(
-        `Player ID ${playerId} exceeds maximum value ${GameMapImpl.PLAYER_ID_MASK}`,
-      );
-    }
-    this.state[ref] =
-      (this.state[ref] & ~GameMapImpl.PLAYER_ID_MASK) | playerId;
+    this.state[ref] = stateWithOwner(
+      this.state[ref],
+      playerId,
+      this.wideOwners,
+    );
     this.stateObserver?.(ref);
   }
 
@@ -601,7 +630,7 @@ export class GameMapImpl implements GameMap {
     return this.state[tile];
   }
 
-  tileStateBuffer(): Uint16Array {
+  tileStateBuffer(): TileStateArray {
     return this.state;
   }
 
@@ -624,7 +653,7 @@ export class GameMapImpl implements GameMap {
    *   bits 16-23: terrain byte (land, ocean, shoreline, magnitude)
    */
   updateTile(tile: TileRef, packed: number): boolean {
-    const state = packed & 0xffff;
+    const state = checkedTileState(packed, this.wideOwners);
     const terrainByte = (packed >>> 16) & 0xff;
 
     const existingFallout = this.hasFallout(tile);

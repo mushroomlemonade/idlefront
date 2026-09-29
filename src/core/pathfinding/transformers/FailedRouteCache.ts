@@ -9,7 +9,9 @@ import type { PathFinder } from "../types";
 export class FailedRouteCache implements PathFinder<TileRef> {
   private readonly failures = new Set<string>();
   private revision: string | undefined;
-  readonly metrics = { searches: 0, hits: 0, invalidations: 0 };
+  readonly metrics = { searches: 0, hits: 0, invalidations: 0, totalMs: 0 };
+  readonly failureSamples: { from: number[]; to: number; revision: string }[] =
+    [];
   constructor(
     private readonly inner: PathFinder<TileRef>,
     private readonly getRevision: () => string,
@@ -24,17 +26,36 @@ export class FailedRouteCache implements PathFinder<TileRef> {
     }
     // Multi-source ordering and duplicate-source behavior stay entirely with
     // the existing pathfinder; do not build enormous keys for port searches.
-    const key = typeof from === "number" ? `${from}:${to}` : undefined;
+    // Preserve exact ordered multi-source semantics. Port coast candidates are
+    // small; repeated failures from that same shore need not run A* again.
+    const key =
+      typeof from === "number"
+        ? `${from}:${to}`
+        : from.length <= 64
+          ? `m:${from.join(",")}:${to}`
+          : undefined;
     if (key !== undefined && this.failures.has(key)) {
       this.metrics.hits++;
       return null;
     }
     this.metrics.searches++;
-    const route = this.inner.findPath(from, to);
+    const started = performance.now();
+    let route: TileRef[] | null;
+    try {
+      route = this.inner.findPath(from, to);
+    } finally {
+      this.metrics.totalMs += performance.now() - started;
+    }
     if (route === null && key !== undefined && this.capacity > 0) {
       if (this.failures.size >= this.capacity)
         this.failures.delete(this.failures.values().next().value!);
       this.failures.add(key);
+      this.failureSamples.push({
+        from: typeof from === "number" ? [from] : from.slice(),
+        to,
+        revision,
+      });
+      if (this.failureSamples.length > 16) this.failureSamples.shift();
     }
     return route;
   }

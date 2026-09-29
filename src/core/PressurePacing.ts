@@ -1,8 +1,8 @@
 import { z } from "zod";
 
-/** Game seconds, shared by manual and automatic mobilisation. Population
- * growth is expressed as the time to double an uncapped population. These
- * are initial tuning values, not guarantees about match duration.
+/** Game seconds, shared by manual and automatic mobilisation. New worlds use
+ * the native population curve with a rate multiplier in every mode. Doubling
+ * times remain for legacy saved configs. These are tuning values, not duration guarantees.
  */
 export const PressurePacingSchema = z
   .object({
@@ -25,8 +25,17 @@ const DEFAULTS: Record<"1h" | "1d" | "7d", Readonly<PressurePacing>> = {
     populationDoublingSeconds: 600,
     mobilisationHalfLifeSeconds: 5,
   },
-  "1d": { populationDoublingSeconds: 7200, mobilisationHalfLifeSeconds: 10 },
-  "7d": { populationDoublingSeconds: 86400, mobilisationHalfLifeSeconds: 3600 },
+  // Retain the intended slower pacing without selecting the legacy formula.
+  "1d": {
+    populationGrowthMultiplier: 1 / 12,
+    populationDoublingSeconds: 7200,
+    mobilisationHalfLifeSeconds: 10,
+  },
+  "7d": {
+    populationGrowthMultiplier: 0.01,
+    populationDoublingSeconds: 86400,
+    mobilisationHalfLifeSeconds: 3600,
+  },
 };
 
 export function pressurePacingForDuration(

@@ -10,6 +10,10 @@ export type UnitPredicate = (value: {
 export class UnitGrid {
   private grid: Map<UnitType, Set<Unit | UnitView>>[][];
   private readonly cellSize = 100;
+  // Sparse types (especially missiles) should not scan thousands of empty
+  // cells for every SAM. Cell IDs preserve the original row-major ordering.
+  private readonly occupiedCells = new Map<UnitType, Set<number>>();
+  private readonly membership = new WeakMap<Unit | UnitView, TileRef>();
 
   constructor(private gm: GameMap) {
     this.grid = Array(Math.ceil(gm.height() / this.cellSize))
@@ -32,6 +36,13 @@ export class UnitGrid {
     const [gridX, gridY] = this.getGridCoords(this.gm.x(tile), this.gm.y(tile));
 
     if (this.isValidCell(gridX, gridY)) {
+      this.membership.set(unit, tile);
+      let occupied = this.occupiedCells.get(unit.type());
+      if (!occupied) {
+        occupied = new Set();
+        this.occupiedCells.set(unit.type(), occupied);
+      }
+      occupied.add(gridY * this.grid[0].length + gridX);
       const unitSet = this.grid[gridY][gridX].get(unit.type());
       if (unitSet !== undefined) {
         unitSet.add(unit);
@@ -46,7 +57,7 @@ export class UnitGrid {
 
   // Remove a unit from the grid
   removeUnit(unit: Unit | UnitView) {
-    const tile = unit.tile();
+    const tile = this.membership.get(unit) ?? unit.tile();
     this.removeUnitByTile(unit, tile);
   }
 
@@ -56,7 +67,12 @@ export class UnitGrid {
     if (this.isValidCell(gridX, gridY)) {
       const unitSet = this.grid[gridY][gridX].get(unit.type());
       if (unitSet !== undefined) {
-        unitSet.delete(unit);
+        if (unitSet.delete(unit)) this.membership.delete(unit);
+        if (unitSet.size === 0) {
+          this.occupiedCells
+            .get(unit.type())
+            ?.delete(gridY * this.grid[0].length + gridX);
+        }
       }
     }
   }
@@ -66,7 +82,7 @@ export class UnitGrid {
    */
   updateUnitCell(unit: Unit | UnitView) {
     const newTile = unit.tile();
-    const oldTile = unit.lastTile();
+    const oldTile = this.membership.get(unit) ?? unit.lastTile();
     const [gridX, gridY] = this.getGridCoords(
       this.gm.x(oldTile),
       this.gm.y(oldTile),
@@ -149,9 +165,67 @@ export class UnitGrid {
     );
     const rangeSquared = searchRange * searchRange;
 
+    const requested = typeof types === "string" ? [types] : types;
+    const occupiedCount = requested.reduce(
+      (sum, type) => sum + (this.occupiedCells.get(type)?.size ?? 0),
+      0,
+    );
+    if (occupiedCount === 0) return nearby;
+    const cellCount = (endGridX - startGridX + 1) * (endGridY - startGridY + 1);
+    // Sorting is worthwhile only for sparse queries. Dense fleet queries keep
+    // their allocation-free rectangular traversal below.
+    if (occupiedCount * 4 < cellCount * requested.length) {
+      const columns = this.grid[0].length;
+      const candidates = new Set<number>();
+      for (const type of requested) {
+        for (const cellID of this.occupiedCells.get(type) ?? []) {
+          const cy = Math.floor(cellID / columns);
+          const cx = cellID % columns;
+          if (
+            cx >= startGridX &&
+            cx <= endGridX &&
+            cy >= startGridY &&
+            cy <= endGridY
+          )
+            candidates.add(cellID);
+        }
+      }
+      for (const cellID of [...candidates].sort((a, b) => a - b)) {
+        const cell = this.grid[Math.floor(cellID / columns)][cellID % columns];
+        for (const type of requested) {
+          for (const unit of cell.get(type) ?? []) {
+            if (
+              !unit.isActive() ||
+              (!includeUnderConstruction && unit.isUnderConstruction())
+            )
+              continue;
+            const dx = gm.x(unit.tile()) - x;
+            const dy = gm.y(unit.tile()) - y;
+            const distSquared = dx * dx + dy * dy;
+            if (distSquared > rangeSquared) continue;
+            const value = { unit, distSquared };
+            if (predicate !== undefined && !predicate(value)) continue;
+            nearby.push(value);
+          }
+        }
+      }
+      return nearby;
+    }
+
     if (Array.isArray(types)) {
       for (let cy = startGridY; cy <= endGridY; cy++) {
         for (let cx = startGridX; cx <= endGridX; cx++) {
+          const cellDX = Math.max(
+            cx * this.cellSize - x,
+            0,
+            x - ((cx + 1) * this.cellSize - 1),
+          );
+          const cellDY = Math.max(
+            cy * this.cellSize - y,
+            0,
+            y - ((cy + 1) * this.cellSize - 1),
+          );
+          if (cellDX * cellDX + cellDY * cellDY > rangeSquared) continue;
           const cell = this.grid[cy][cx];
           for (const type of types) {
             const unitSet = cell.get(type);
@@ -180,6 +254,17 @@ export class UnitGrid {
     const type = types;
     for (let cy = startGridY; cy <= endGridY; cy++) {
       for (let cx = startGridX; cx <= endGridX; cx++) {
+        const cellDX = Math.max(
+          cx * this.cellSize - x,
+          0,
+          x - ((cx + 1) * this.cellSize - 1),
+        );
+        const cellDY = Math.max(
+          cy * this.cellSize - y,
+          0,
+          y - ((cy + 1) * this.cellSize - 1),
+        );
+        if (cellDX * cellDX + cellDY * cellDY > rangeSquared) continue;
         const unitSet = this.grid[cy][cx].get(type as UnitType);
         if (unitSet === undefined) continue;
         for (const unit of unitSet) {

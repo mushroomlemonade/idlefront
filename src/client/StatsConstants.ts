@@ -6,6 +6,7 @@ export const COLUMN_IDS = [
   "tiles",
   "gold",
   "troops",
+  "gdp",
   "maxtroops",
   "cities",
   "ports",

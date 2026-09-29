@@ -1,15 +1,15 @@
-import { getPaletteSize } from "../../gl/utils/ColorUtils";
 import type { PlayerState, PlayerStatic } from "../../types";
 
 // Owner IDs occupy 12 bits in the canonical tile codec. Keep diplomacy at the
 // same ceiling so large worlds do not silently treat high-ID allies as neutral.
-const RELATION_SIZE = getPaletteSize();
+const RELATION_SIZE = 4096; // Legacy full matrix only; wide maps use a local row.
 const RELATION_NEUTRAL = 0;
 const RELATION_FRIENDLY = 1;
 const RELATION_EMBARGO = 2;
 
 /** Reusable matrix buffer — one allocation, rewritten each frame. */
 const matrix = new Uint8Array(RELATION_SIZE * RELATION_SIZE);
+let localRelations: Uint8Array | undefined;
 
 export interface RelationMatrixResult {
   matrix: Uint8Array;
@@ -26,7 +26,34 @@ export interface RelationMatrixResult {
 export function buildRelationMatrix(
   players: ReadonlyMap<number, PlayerState>,
   teams?: ReadonlyMap<number, string>,
+  localPlayerID?: number,
 ): RelationMatrixResult {
+  // The paged renderer needs only local-player diplomacy, not an NxN GPU
+  // border table. Keep wide-owner stress worlds O(N + alliance edges).
+  if (localPlayerID !== undefined) {
+    localRelations ??= new Uint8Array(65536);
+    localRelations.fill(RELATION_NEUTRAL);
+    const local = players.get(localPlayerID);
+    const allies = new Set(local?.allies ?? []);
+    const embargoes = new Set(local?.embargoes ?? []);
+    const localTeam = teams?.get(localPlayerID);
+    for (const ps of players.values()) {
+      const id = ps.smallID;
+      if (id <= 0 || id >= localRelations.length) continue;
+      const friendly =
+        allies.has(id) ||
+        ps.allies?.includes(localPlayerID) ||
+        (localTeam !== undefined && teams?.get(id) === localTeam);
+      const embargo =
+        embargoes.has(id) || ps.embargoes?.includes(localPlayerID);
+      localRelations[id] = embargo
+        ? RELATION_EMBARGO
+        : friendly
+          ? RELATION_FRIENDLY
+          : RELATION_NEUTRAL;
+    }
+    return { matrix: localRelations, size: 65536 };
+  }
   matrix.fill(RELATION_NEUTRAL);
 
   // Teammates — mark same-team pairs as friendly (before embargoes, which override)

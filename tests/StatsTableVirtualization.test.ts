@@ -12,6 +12,9 @@ function player(id: string, tiles: number): PlayerView {
     gold: () => BigInt(tiles),
     troops: () => tiles,
     totalUnitLevels: () => tiles,
+    units: () => [],
+    allies: () => [],
+    betrayals: () => 0,
     isAlive: () => true,
     isOnSameTeam: () => false,
   } as unknown as PlayerView;
@@ -20,7 +23,7 @@ function player(id: string, tiles: number): PlayerView {
 function gameWith(players: PlayerView[], me: PlayerView | null): GameView {
   return {
     myPlayer: () => me,
-    playerViews: () => players,
+    players: () => players,
     config: () => ({ maxTroops: () => 100 }),
     numLandTiles: () => 100,
     numTilesWithFallout: () => 0,
@@ -125,6 +128,42 @@ describe("StatsTable virtualization", () => {
     expect(scrollRows(el)).toEqual(["1", "2", "3", "4", "5", "6", "7"]);
     expect(el.querySelector(".stats-table-spacer")).toBeNull();
 
+    el.remove();
+  });
+
+  it("uses only land, gold and GDP in compact mode, and every statistic expanded", async () => {
+    const el = await mount(gameWith([player("one", 5)], null));
+    el.compact = true;
+    await el.updateComplete;
+    expect(el.querySelectorAll('[role="columnheader"]')).toHaveLength(5);
+    expect(el.querySelector("column-picker")).toBeNull();
+    expect(
+      el.querySelector(
+        '[title="gdp · completed asset value at standard prices"]',
+      ),
+    ).not.toBeNull();
+    el.expanded = true;
+    await el.updateComplete;
+    expect(el.querySelectorAll('[role="columnheader"]')).toHaveLength(16);
+    expect(el.querySelector('[title="leaderboard.cities"]')).not.toBeNull();
+    el.remove();
+  });
+
+  it("resets both the native scroll and row window when a chart changes sorting", async () => {
+    const el = await mount(
+      gameWith(
+        Array.from({ length: 100 }, (_, i) => player(`p${i}`, 100 - i)),
+        null,
+      ),
+    );
+    const scroller = el.querySelector<HTMLElement>(".stats-table-scroll")!;
+    scroller.scrollTop = 1200;
+    scroller.dispatchEvent(new Event("scroll"));
+    await el.updateComplete;
+    el.sortBy("gold");
+    await el.updateComplete;
+    expect(scroller.scrollTop).toBe(0);
+    expect(scrollRows(el)[0]).toBe("1");
     el.remove();
   });
 });

@@ -4,6 +4,7 @@
  */
 
 import { createTexture2D } from "../../utils/GlUtils";
+import { foldedTextureShape } from "../../utils/OwnerTextureLayout";
 import type { ParsedAtlas } from "./Types";
 import { CHAR_RANGE, LINES_PER_PLAYER, MAX_CHARS } from "./Types";
 
@@ -48,8 +49,7 @@ export function buildCursorTex(
 ): WebGLTexture {
   const height = maxPlayers * LINES_PER_PLAYER;
   return createTexture2D(gl, {
-    width: MAX_CHARS,
-    height,
+    ...foldedTextureShape(MAX_CHARS, height),
     internalFormat: gl.R32F,
     format: gl.RED,
     type: gl.FLOAT,
@@ -64,8 +64,7 @@ export function buildStringTex(
 ): WebGLTexture {
   const height = maxPlayers * LINES_PER_PLAYER;
   return createTexture2D(gl, {
-    width: MAX_CHARS,
-    height,
+    ...foldedTextureShape(MAX_CHARS, height),
     internalFormat: gl.R8UI,
     format: gl.RED_INTEGER,
     type: gl.UNSIGNED_BYTE,
@@ -82,8 +81,7 @@ export function buildPlayerDataTex(
   maxPlayers: number,
 ): WebGLTexture {
   return createTexture2D(gl, {
-    width: PLAYER_DATA_COLS,
-    height: maxPlayers,
+    ...foldedTextureShape(PLAYER_DATA_COLS, maxPlayers),
     internalFormat: gl.RGBA32F,
     format: gl.RGBA,
     type: gl.FLOAT,

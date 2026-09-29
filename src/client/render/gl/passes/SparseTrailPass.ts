@@ -46,7 +46,7 @@ void main() {
   float radius = length(vCorner);
   if (radius > 1.0) discard;
   uint packed = uint(vValue + 0.5);
-  uint owner = packed & 0xFFFu;
+  uint owner = (packed & 0xFFFu) | ((packed >> 4u) & 0xF000u);
   if (owner == 0u) discard;
   uint isNuke = (packed >> 12) & 1u;
   int o = int(owner);
@@ -151,7 +151,10 @@ export class SparseTrailPass {
     this.slotByRef.clear();
     this.refBySlot.length = 0;
     this.count = state.size;
-    this.capacity = Math.max(256, 2 ** Math.ceil(Math.log2(Math.max(1, this.count))));
+    this.capacity = Math.max(
+      256,
+      2 ** Math.ceil(Math.log2(Math.max(1, this.count))),
+    );
     this.data = new Float32Array(this.capacity * FLOATS_PER_INSTANCE);
     let slot = 0;
     for (const [ref, value] of state) {
@@ -163,7 +166,10 @@ export class SparseTrailPass {
     this.gl.bufferData(this.gl.ARRAY_BUFFER, this.data, this.gl.DYNAMIC_DRAW);
   }
 
-  apply(state: ReadonlyMap<number, number>, dirtyRefs: readonly number[]): void {
+  apply(
+    state: ReadonlyMap<number, number>,
+    dirtyRefs: readonly number[],
+  ): void {
     if (dirtyRefs.length === 0) return;
     let min = Infinity;
     let max = -1;
@@ -242,12 +248,28 @@ export class SparseTrailPass {
     if (this.count === 0 || !this.settings.passEnabled.trail) return;
     const gl = this.gl;
     gl.useProgram(this.program);
-    gl.uniformMatrix3fv(gl.getUniformLocation(this.program, "uCamera"), false, camera);
+    gl.uniformMatrix3fv(
+      gl.getUniformLocation(this.program, "uCamera"),
+      false,
+      camera,
+    );
     gl.uniform1f(gl.getUniformLocation(this.program, "uZoom"), zoom);
-    gl.uniform1f(gl.getUniformLocation(this.program, "uResolutionScale"), resolutionScale);
-    gl.uniform1f(gl.getUniformLocation(this.program, "uAlpha"), this.settings.mapOverlay.trailAlpha);
-    gl.uniform1f(gl.getUniformLocation(this.program, "uTime"), (performance.now() - this.startTime) / 1000);
-    gl.uniform1i(gl.getUniformLocation(this.program, "uAltView"), this.altView ? 1 : 0);
+    gl.uniform1f(
+      gl.getUniformLocation(this.program, "uResolutionScale"),
+      resolutionScale,
+    );
+    gl.uniform1f(
+      gl.getUniformLocation(this.program, "uAlpha"),
+      this.settings.mapOverlay.trailAlpha,
+    );
+    gl.uniform1f(
+      gl.getUniformLocation(this.program, "uTime"),
+      (performance.now() - this.startTime) / 1000,
+    );
+    gl.uniform1i(
+      gl.getUniformLocation(this.program, "uAltView"),
+      this.altView ? 1 : 0,
+    );
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.paletteTex);
     gl.activeTexture(gl.TEXTURE1);

@@ -2,6 +2,8 @@ import { z } from "zod";
 import { PlayerBuildable } from "../game/Game";
 import type { GameUpdateViewData } from "../game/GameUpdates";
 import type { WorkerMessage } from "../worker/WorkerMessages";
+import { WORLD_HISTORY_METRICS } from "../WorldHistory";
+import { packPressureTable, unpackPressureTable } from "./ViewPressureTable";
 
 export const ViewQuerySchema = z.object({
   type: z.enum([
@@ -11,8 +13,11 @@ export const ViewQuerySchema = z.object({
     "player_border_tiles",
     "attack_clustered_positions",
     "transport_ship_spawn",
+    "world_history",
   ]),
   id: z.string().min(1).max(64),
+  metric: z.enum(WORLD_HISTORY_METRICS).optional(),
+  ascending: z.boolean().optional(),
   playerID: z.union([z.string().max(64), z.number().int().nonnegative()]),
   x: z.number().int().nonnegative().optional(),
   y: z.number().int().nonnegative().optional(),
@@ -45,10 +50,15 @@ export type ViewPacket =
 // Versioned binary envelope: JSON metadata followed by aligned typed-array
 // payloads. Preserve undefined (diff clears), Set and bigint across the wire.
 const MAGIC = 0x49465631;
-export function encodeViewPacket(packet: ViewPacket): Uint8Array<ArrayBuffer> {
+const COMPACT_MAGIC = 0x49465632;
+export function encodeViewPacket(
+  packet: ViewPacket,
+  compact = true,
+): Uint8Array<ArrayBuffer> {
+  const payload = compact ? packPressureTable(packet) : packet;
   const arrays: ArrayBufferView[] = [];
   let bytes = 0;
-  const json = JSON.stringify(packet, (_key, value) => {
+  const json = JSON.stringify(payload, (_key, value) => {
     if (value === undefined) return { $if: "undefined" };
     if (typeof value === "bigint")
       return { $if: "bigint", value: String(value) };
@@ -70,7 +80,7 @@ export function encodeViewPacket(packet: ViewPacket): Uint8Array<ArrayBuffer> {
   const base = Math.ceil((12 + meta.length) / 8) * 8;
   const result = new Uint8Array(base + bytes);
   const header = new DataView(result.buffer);
-  header.setUint32(0, MAGIC);
+  header.setUint32(0, payload === packet ? MAGIC : COMPACT_MAGIC);
   header.setUint32(4, meta.length);
   header.setUint32(8, base);
   result.set(meta, 12);
@@ -84,7 +94,10 @@ export function encodeViewPacket(packet: ViewPacket): Uint8Array<ArrayBuffer> {
 
 export function decodeViewPacket(buffer: ArrayBuffer): ViewPacket {
   const header = new DataView(buffer);
-  if (buffer.byteLength < 12 || header.getUint32(0) !== MAGIC)
+  if (
+    buffer.byteLength < 12 ||
+    ![MAGIC, COMPACT_MAGIC].includes(header.getUint32(0))
+  )
     throw new Error("Unsupported view protocol");
   const length = header.getUint32(4);
   const base = header.getUint32(8);
@@ -118,7 +131,9 @@ export function decodeViewPacket(buffer: ArrayBuffer): ViewPacket {
     for (const k of Object.keys(value)) value[k] = hydrate(value[k]);
     return value;
   };
-  return hydrate(
-    JSON.parse(new TextDecoder().decode(new Uint8Array(buffer, 12, length))),
+  return unpackPressureTable(
+    hydrate(
+      JSON.parse(new TextDecoder().decode(new Uint8Array(buffer, 12, length))),
+    ),
   );
 }

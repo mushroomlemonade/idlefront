@@ -28,6 +28,8 @@ import {
   HashUpdate,
   WinUpdate,
 } from "../core/game/GameUpdates";
+import { usesWideOwnerStorage } from "../core/game/OwnerIdCodec";
+import { PagedGameMap } from "../core/game/PagedGameMap";
 import { loadTerrainMap, TerrainMapData } from "../core/game/TerrainMapLoader";
 import {
   GRAPHICS_KEY,
@@ -86,6 +88,10 @@ import {
   showGLGate,
   trackGLInit,
 } from "./render/gl";
+import {
+  configureOwnerCapacity,
+  getPaletteSize,
+} from "./render/gl/utils/ColorUtils";
 import { ALL_UNIT_TYPES, UnitState } from "./render/types";
 import { SoundManager } from "./sound/SoundManager";
 import { themeProvider } from "./theme/ThemeProvider";
@@ -348,7 +354,7 @@ function createWebGLView(
     cachedWebGLFrameCallback.current = null;
   };
 
-  const palette = new Float32Array(4096 * 2 * 4);
+  const palette = new Float32Array(getPaletteSize() * 2 * 4);
   // Log the GPU init result on every session so we can size the real % of
   // users on software/missing WebGL2. MapRenderer constructs the GL context;
   // a non-accelerated context throws GLUnavailableError (handled by the
@@ -370,6 +376,7 @@ function createWebGLView(
           config.numBots(),
           config.gameConfig().maxPlayers,
           gameMap.isPaged(),
+          config.gameConfig().longplayStressTest === "owner16-v1",
         ),
       },
       terrainSource,
@@ -583,6 +590,16 @@ async function createClientGame(
       false, // GameView uses the exact map only; worker/server owns simulation.
     );
   }
+  const wideOwners = usesWideOwnerStorage(
+    config.gameConfig(),
+    lobbyConfig.gameStartInfo.players.length,
+  );
+  if (wideOwners) {
+    if (!(gameMap.gameMap instanceof PagedGameMap))
+      throw new Error("Wide-owner preview requires a paged longplay map");
+    gameMap.gameMap = gameMap.gameMap.withWideOwners();
+  }
+  configureOwnerCapacity(wideOwners);
   // Kick off the font-atlas fetch so it overlaps with worker init; the
   // render passes need it parsed before createWebGLView runs.
   const atlasDataLoad = preloadAtlasData();

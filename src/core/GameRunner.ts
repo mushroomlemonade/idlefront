@@ -27,6 +27,7 @@ import { TileRef } from "./game/GameMap";
 import { GameMapLoader } from "./game/GameMapLoader";
 import { ErrorUpdate, GameUpdateViewData } from "./game/GameUpdates";
 import { createNationsForGame } from "./game/NationCreation";
+import { usesWideOwnerStorage } from "./game/OwnerIdCodec";
 import { loadTerrainMap as loadGameMap } from "./game/TerrainMapLoader";
 import { PseudoRandom } from "./PseudoRandom";
 import { ClientID, GameStartInfo, Turn } from "./Schemas";
@@ -39,11 +40,24 @@ export async function createGameRunner(
   callBack: (gu: GameUpdateViewData | ErrorUpdate) => void,
 ): Promise<GameRunner> {
   const config = new Config(gameStart.config, null, false, gameStart.listed);
+  const wideOwners = usesWideOwnerStorage(
+    gameStart.config,
+    gameStart.players.length,
+  );
+  if (
+    gameStart.config.bots > 2000 &&
+    gameStart.config.longplayStressTest !== "owner16-v1"
+  )
+    throw new Error(
+      "More than 2000 bots requires the longplay stress-test capability",
+    );
   const gameMap = await loadGameMap(
     gameStart.config.gameMap,
     gameStart.config.gameMapSize,
     mapLoader,
     false, // Worker never renders layers — skip image loading to save memory.
+    true,
+    wideOwners,
   );
   const random = new PseudoRandom(simpleHash(gameStart.gameID));
   gameMap.gameMap =

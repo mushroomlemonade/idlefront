@@ -27,6 +27,7 @@ import type {
 import { PlayerTypeEnum } from "../../../types";
 import type { RenderSettings } from "../../RenderSettings";
 import { createFullscreenQuad } from "../../utils/GlUtils";
+import { foldedTextureShape } from "../../utils/OwnerTextureLayout";
 
 import { renderTroops } from "../../../../Utils";
 import type { GlyphTables } from "./AtlasData";
@@ -795,14 +796,18 @@ export class NamePass {
 
     const gl = this.gl;
     if (this.stringDataDirty) {
+      const shape = foldedTextureShape(
+        MAX_CHARS,
+        this.maxPlayers * LINES_PER_PLAYER,
+      );
       gl.bindTexture(gl.TEXTURE_2D, this.stringTex);
       gl.texSubImage2D(
         gl.TEXTURE_2D,
         0,
         0,
         0,
-        MAX_CHARS,
-        this.maxPlayers * LINES_PER_PLAYER,
+        shape.width,
+        shape.height,
         gl.RED_INTEGER,
         gl.UNSIGNED_BYTE,
         this.cpuStringData,
@@ -810,14 +815,18 @@ export class NamePass {
       this.stringDataDirty = false;
     }
     if (this.cursorDataDirty) {
+      const shape = foldedTextureShape(
+        MAX_CHARS,
+        this.maxPlayers * LINES_PER_PLAYER,
+      );
       gl.bindTexture(gl.TEXTURE_2D, this.cursorTex);
       gl.texSubImage2D(
         gl.TEXTURE_2D,
         0,
         0,
         0,
-        MAX_CHARS,
-        this.maxPlayers * LINES_PER_PLAYER,
+        shape.width,
+        shape.height,
         gl.RED,
         gl.FLOAT,
         this.cpuCursorData,
@@ -825,14 +834,15 @@ export class NamePass {
       this.cursorDataDirty = false;
     }
     if (this.playerDataDirty) {
+      const shape = foldedTextureShape(PLAYER_DATA_COLS, this.maxPlayers);
       gl.bindTexture(gl.TEXTURE_2D, this.playerDataTex);
       gl.texSubImage2D(
         gl.TEXTURE_2D,
         0,
         0,
         0,
-        PLAYER_DATA_COLS,
-        this.maxPlayers,
+        shape.width,
+        shape.height,
         gl.RGBA,
         gl.FLOAT,
         this.cpuPlayerData,

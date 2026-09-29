@@ -1,3 +1,4 @@
+import { assetValue } from "../../../../core/AssetValue";
 import { UnitType } from "../../../../core/game/Game";
 import type { ColumnId, StatsTableKind } from "../../../StatsConstants";
 import { formatPercentage, renderNumber, renderTroops } from "../../../Utils";
@@ -64,6 +65,7 @@ export interface ColumnDef {
   readonly isOrderable: boolean;
   /** Number behind the column — sorting and team totals. */
   readonly value?: ValueGetter;
+  readonly unitType?: UnitType;
   readonly cell: (row: ColumnRow, game: GameView) => string;
 }
 
@@ -91,6 +93,7 @@ function unitColumn(
     id,
     labelKey,
     headerVisual: { kind: "icon", src: icon },
+    unitType,
     align: "center",
     value: (player) => player.totalUnitLevels(unitType),
     cell: (row) => renderNumber(row.value),
@@ -170,6 +173,13 @@ export const COLUMN_DEFS: readonly ColumnDef[] = [
     cell: (row) => renderTroops(row.value),
   }),
   defineColumn({
+    id: "gdp",
+    labelKey: "gdp",
+    headerVisual: { kind: "text", text: "gdp" },
+    value: (player) => assetValue(player.units()),
+    cell: (row) => renderNumber(row.value),
+  }),
+  defineColumn({
     id: "maxtroops",
     labelKey: "leaderboard.maxtroops",
     headerVisual: {
@@ -223,9 +233,24 @@ export function columnValues(
   columns: readonly ColumnDef[],
 ): ReadonlyMap<ColumnId, number> {
   const values = new Map<ColumnId, number>();
+  // Expanded standings/history need several unit metrics at once. Aggregate
+  // once per player instead of allocating and filtering their fleet six times.
+  let totals: Map<UnitType, number> | undefined;
+  if (columns.filter((c) => c.unitType !== undefined).length > 1) {
+    totals = new Map();
+    for (const unit of player.units()) {
+      if (!unit.isUnderConstruction())
+        totals.set(unit.type(), (totals.get(unit.type()) ?? 0) + unit.level());
+    }
+  }
   for (const column of columns) {
     if (column.value === undefined) continue;
-    values.set(column.id, column.value(player, game));
+    values.set(
+      column.id,
+      totals && column.unitType !== undefined
+        ? (totals.get(column.unitType) ?? 0)
+        : column.value(player, game),
+    );
   }
   return values;
 }

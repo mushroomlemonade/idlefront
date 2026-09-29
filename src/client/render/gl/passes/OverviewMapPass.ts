@@ -1,12 +1,12 @@
 import type { GameMap } from "../../../../core/game/GameMap";
 import type { RenderSettings } from "../RenderSettings";
-import { FOG_SHADER } from "./FogShader";
 import { createBoardMaterialTexture } from "../utils/BoardMaterialTexture";
 import {
   createMapQuad,
   createProgram,
   createTexture2D,
 } from "../utils/GlUtils";
+import { FOG_SHADER } from "./FogShader";
 
 const OVERVIEW_TEXEL_BUDGET = 8 * 1024 * 1024;
 const OVERVIEW_MAX_EDGE = 4096;
@@ -147,7 +147,7 @@ uint tileAt(ivec2 world) {
 
 uint ownerAt(ivec2 world) {
   world = clamp(world, ivec2(0), ivec2(uWorldSize) - ivec2(1));
-  return tileAt(world) & 4095u;
+  uint raw = tileAt(world); return (raw & 4095u) | ((raw >> 4u) & 61440u);
 }
 
 bool landAt(ivec2 world) {
@@ -170,7 +170,7 @@ void main() {
     outColor = vec4(cloud, 1.0);
     return;
   }
-  uint owner = tile & 4095u;
+  uint owner = (tile & 4095u) | ((tile >> 4u) & 61440u);
   bool isLand = (terrain & 128u) != 0u;
   vec3 color = terrainColor(terrain);
   if (uMineralEnabled != 0) {
@@ -264,7 +264,7 @@ export function chooseOverviewRasterSize(
 export class OverviewMapPass {
   readonly raster: OverviewRasterSize;
   private readonly terrain: Uint8Array;
-  private readonly tiles: Uint16Array;
+  private readonly tiles: Uint16Array | Uint32Array;
   private readonly terrainTex: WebGLTexture;
   private readonly tileTex: WebGLTexture;
   private readonly detailTerrainTex: WebGLTexture;
@@ -281,7 +281,7 @@ export class OverviewMapPass {
       slot: number;
       used: number;
       terrain: Uint8Array;
-      tiles: Uint16Array;
+      tiles: Uint16Array | Uint32Array;
       minY: number;
       maxY: number;
     }
@@ -310,7 +310,9 @@ export class OverviewMapPass {
   ) {
     this.raster = chooseOverviewRasterSize(map.width(), map.height());
     this.terrain = new Uint8Array(this.raster.width * this.raster.height);
-    this.tiles = new Uint16Array(this.raster.width * this.raster.height);
+    this.tiles = new (map.ownerIdBits === 16 ? Uint32Array : Uint16Array)(
+      this.raster.width * this.raster.height,
+    );
     this.rebuildCpuRaster();
 
     this.terrainTex = createTexture2D(gl, {
@@ -325,9 +327,9 @@ export class OverviewMapPass {
     this.tileTex = createTexture2D(gl, {
       width: this.raster.width,
       height: this.raster.height,
-      internalFormat: gl.R16UI,
+      internalFormat: map.ownerIdBits === 16 ? gl.R32UI : gl.R16UI,
       format: gl.RED_INTEGER,
-      type: gl.UNSIGNED_SHORT,
+      type: map.ownerIdBits === 16 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT,
       data: this.tiles,
       filter: gl.NEAREST,
     });
@@ -347,9 +349,9 @@ export class OverviewMapPass {
       gl.UNSIGNED_BYTE,
     );
     this.detailTileTex = this.createArrayTexture(
-      gl.R16UI,
+      map.ownerIdBits === 16 ? gl.R32UI : gl.R16UI,
       gl.RED_INTEGER,
-      gl.UNSIGNED_SHORT,
+      map.ownerIdBits === 16 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT,
     );
     this.pageTableTex = createTexture2D(gl, {
       width: this.pageGridWidth,
@@ -587,7 +589,9 @@ export class OverviewMapPass {
     }
 
     const terrain = new Uint8Array(DETAIL_PAGE_SIZE * DETAIL_PAGE_SIZE);
-    const tiles = new Uint16Array(DETAIL_PAGE_SIZE * DETAIL_PAGE_SIZE);
+    const tiles = new (this.map.ownerIdBits === 16 ? Uint32Array : Uint16Array)(
+      DETAIL_PAGE_SIZE * DETAIL_PAGE_SIZE,
+    );
     const stride = this.detailStride;
     const originX = pageX * DETAIL_PAGE_SIZE * stride;
     const originY = pageY * DETAIL_PAGE_SIZE * stride;
@@ -641,7 +645,7 @@ export class OverviewMapPass {
       DETAIL_PAGE_SIZE,
       1,
       gl.RED_INTEGER,
-      gl.UNSIGNED_SHORT,
+      this.map.ownerIdBits === 16 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT,
       tiles,
     );
     this.resident.set(pageIndex, {
@@ -773,7 +777,7 @@ export class OverviewMapPass {
         height,
         1,
         gl.RED_INTEGER,
-        gl.UNSIGNED_SHORT,
+        this.map.ownerIdBits === 16 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT,
         record.tiles.subarray(start, end),
       );
       record.minY = Infinity;
@@ -802,7 +806,7 @@ export class OverviewMapPass {
         this.raster.width,
         this.raster.height,
         gl.RED_INTEGER,
-        gl.UNSIGNED_SHORT,
+        this.map.ownerIdBits === 16 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT,
         this.tiles,
       );
       this.fullUploadPending = false;
@@ -841,7 +845,7 @@ export class OverviewMapPass {
       this.raster.width,
       height,
       gl.RED_INTEGER,
-      gl.UNSIGNED_SHORT,
+      this.map.ownerIdBits === 16 ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT,
       this.tiles.subarray(start, end),
     );
     this.pendingCells.clear();

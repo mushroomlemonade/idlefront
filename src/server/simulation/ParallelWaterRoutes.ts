@@ -21,6 +21,7 @@ export class ParallelWaterRoutes {
   private unsubscribe: () => void;
   private disabled = false;
   private sequence = 0;
+  private terrainRevision = 0;
   private serial: Promise<unknown> = Promise.resolve();
   private local: WaterRefinementTransformer;
   readonly metrics = { batches: 0, jobs: 0, errors: 0, workers: 0, totalMs: 0 };
@@ -32,10 +33,12 @@ export class ParallelWaterRoutes {
     this.local = new WaterRefinementTransformer(
       { findPath: () => null },
       game.map(),
+      () => String(this.terrainRevision),
     );
-    this.unsubscribe = game.observeWaterConversions((tile) =>
-      this.dirty.add(tile),
-    );
+    this.unsubscribe = game.observeWaterConversions((tile) => {
+      this.dirty.add(tile);
+      this.terrainRevision++;
+    });
   }
   async prepare(): Promise<void> {
     if (this.disabled) {
@@ -109,7 +112,7 @@ export class ParallelWaterRoutes {
     }
   }
   private async batch(jobs: WaterRouteJob[]): Promise<(number[] | null)[]> {
-    if (this.disabled || this.count < 2 || jobs.length < 2)
+    if (this.disabled || this.count < 2)
       return jobs.map((q) => this.local.refine(q.route, q.from, q.to));
     const started = performance.now();
     await this.initialize();
@@ -153,7 +156,11 @@ export class ParallelWaterRoutes {
               worker.on("message", receive);
               worker.once("error", fail);
               worker.once("exit", fail);
-              worker.postMessage({ id, job: jobs[index] });
+              worker.postMessage({
+                id,
+                job: jobs[index],
+                terrainRevision: this.terrainRevision,
+              });
             },
           );
         }

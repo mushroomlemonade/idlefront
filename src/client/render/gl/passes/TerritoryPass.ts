@@ -65,7 +65,7 @@ export class TerritoryPass {
   private showPatterns = true;
 
   /** CPU-side tile state — what is currently on the GPU (display state). */
-  private cpuTileState: Uint16Array;
+  private cpuTileState: Uint16Array | Uint32Array;
   private tilesDirty = false;
 
   /**
@@ -226,7 +226,7 @@ export class TerritoryPass {
   // ---------------------------------------------------------------------------
 
   /** Live-game path: snapshot the initial tile state and clear pending drip. */
-  setLiveRef(tileState: Uint16Array): void {
+  setLiveRef(tileState: Uint16Array | Uint32Array): void {
     this.cpuTileState.set(tileState);
     this.clearDripBuckets();
     this.scatter.clear();
@@ -253,7 +253,7 @@ export class TerritoryPass {
    * arrival order in the same bucket — last write wins when drained.
    */
   applyLiveDelta(
-    tileState: Uint16Array,
+    tileState: Uint16Array | Uint32Array,
     changedTiles: readonly number[],
   ): void {
     const N = this.nBuckets;

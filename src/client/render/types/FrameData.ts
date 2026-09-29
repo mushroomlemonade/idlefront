@@ -17,13 +17,16 @@ import type {
  * Arrays are long-lived and mutated in place each tick (zero-copy refs).
  */
 export interface FrameData {
+  /** Snapshot parts share one tick; defer entity GPU work until the final part. */
+  snapshotLoading?: boolean;
+  readonly tradeCorridors?: Float32Array;
   readonly fogEnabled?: boolean;
   // ── Core accumulated state ────────────────────────────────────────────
 
   readonly tick: number;
   /** True during spawn phase (before gameplay begins). */
   readonly inSpawnPhase: boolean;
-  readonly tileState: Uint16Array;
+  readonly tileState: Uint16Array | Uint32Array;
   readonly trailState: Uint16Array;
   /** Live sparse trail state used by page-backed worlds. */
   readonly trailSparseState: ReadonlyMap<number, number> | null;

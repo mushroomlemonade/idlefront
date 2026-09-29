@@ -1,3 +1,4 @@
+import { pressurePacingForDuration } from "../src/core/PressurePacing";
 import { AttackExecution } from "../src/core/execution/AttackExecution";
 import { applyContinuousPressure } from "../src/core/execution/ContinuousPressure";
 import { Executor } from "../src/core/execution/ExecutionManager";
@@ -125,6 +126,23 @@ describe("native pressure rules", () => {
       a.setTroops(total);
       const expected = game.config().troopIncreaseRate(a);
       a.setTroops(1000);
+      game.executeNextTick();
+      updatePressurePopulation(game, a);
+      expect(state.civilians + a.troops()).toBeCloseTo(total + expected, 8);
+      expect(pressureView(a)!.growthPerSecond).toBeCloseTo(expected * 10, 8);
+    },
+  );
+  it.each(["1h", "1d", "7d"] as const)(
+    "uses native population growth with the configured %s rate",
+    (duration) => {
+      const pace = pressurePacingForDuration(duration);
+      game.config().gameConfig().pressurePacing = pace;
+      const state = pressurePopulation(game, a);
+      const total = state.civilians + a.troops();
+      expect(pace.populationGrowthMultiplier).toBeGreaterThan(0);
+      const expected =
+        game.config().troopIncreaseRate(a, total) *
+        pace.populationGrowthMultiplier!;
       game.executeNextTick();
       updatePressurePopulation(game, a);
       expect(state.civilians + a.troops()).toBeCloseTo(total + expected, 8);

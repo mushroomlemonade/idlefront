@@ -1,6 +1,7 @@
 import { Execution, Game, Player, UnitType } from "../game/Game";
 import { TileRef } from "../game/GameMap";
 import { manuallyCommandFleetShip } from "./FleetAutomation";
+import { resetWarshipPatrolRetry } from "./WarshipPatrolRetry";
 
 export class MoveWarshipExecution implements Execution {
   constructor(
@@ -41,6 +42,7 @@ export class MoveWarshipExecution implements Execution {
       });
       if (this.manual) manuallyCommandFleetShip(this.owner, unitId);
       warship.setTargetTile(undefined);
+      resetWarshipPatrolRetry(warship);
     }
   }
 

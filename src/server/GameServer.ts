@@ -41,6 +41,7 @@ import {
 } from "../core/Schemas";
 import { createPartialGameRecord, simpleHash } from "../core/Util";
 import { archive, finalizeGameRecord } from "./Archive";
+import { archiveIdentity } from "./ArchiveIdentity";
 import { Client } from "./Client";
 import { ClientMsgRateLimiter } from "./ClientMsgRateLimiter";
 import { fetchCustomTribes } from "./CustomTribes";
@@ -54,11 +55,13 @@ import {
   type SimulationRecoveryProgress,
   type TickResult,
 } from "./simulation/SimulationHost";
+import { SimulationPerformanceWindow } from "./simulation/SimulationPerformanceWindow";
 import {
   simulationStartInfo,
   usesServerSimulation,
 } from "./simulation/SimulationPolicy";
 import { ViewConnection } from "./simulation/ViewConnection";
+import { BoundedViewStateCompactor } from "./simulation/ViewStateCompactor";
 import {
   noopMatchTelemetryEmitter,
   type MatchTelemetryEmitter,
@@ -143,6 +146,8 @@ export class GameServer {
   private rejectStartupReady!: (error: Error) => void;
   private startupState: "pending" | "ready" | "failed" = "pending";
   private viewHistoryBytes = 0;
+  private readonly performanceWindow = new SimulationPerformanceWindow();
+  private readonly stateCompactor = new BoundedViewStateCompactor();
 
   private sendViewError(
     ws: WebSocket,
@@ -188,13 +193,22 @@ export class GameServer {
     this.viewConnections.delete(ws);
     const generation = (this.viewGeneration.get(ws) ?? 0) + 1;
     this.viewGeneration.set(ws, generation);
+    const deliveryStartedAt = performance.now();
     const connection = new ViewConnection(
       ws,
-      () => {
+      (failure) => {
+        this.log.warn("view delivery stopped", { gameID: this.id, ...failure });
         this.viewConnections.delete(ws);
-        ws.close(1013, "View delivery timed out");
+        ws.close(1013, `View delivery stopped: ${failure.reason}`);
       },
-      () => this.startInitialManagedSimulation("initial view ready"),
+      () => {
+        this.log.info("view snapshot acknowledged", {
+          gameID: this.id,
+          deliveryMs: performance.now() - deliveryStartedAt,
+        });
+        this.startInitialManagedSimulation("initial view ready");
+      },
+      this.stateCompactor.compact,
     );
     try {
       let baseTick: number;
@@ -253,6 +267,7 @@ export class GameServer {
   }
 
   private publishView(result: TickResult): void {
+    const receivedAt = performance.now();
     const frames = result.views?.flatMap((view) =>
       (view.packets ?? [view.bytes]).map((bytes) => ({
         clientID: view.clientID,
@@ -291,6 +306,13 @@ export class GameServer {
       this.winner = { ...result.win, type: "winner" };
       this.archiveGame();
     }
+    const publishedAt = performance.now();
+    this.performanceWindow.record(
+      result.tick,
+      publishedAt,
+      result.duration + publishedAt - receivedAt,
+      Math.max(0, publishedAt - this.simulationDeadline),
+    );
     if (result.tick % 100 === 0)
       this.log.info("authoritative simulation", {
         tick: result.tick,
@@ -307,6 +329,14 @@ export class GameServer {
         motionPlanBytes: result.motionPlanBytes,
         unitUpdates: result.unitUpdateCount,
         views: this.viewConnections.size,
+        rollingPerformance: this.performanceWindow.summary(),
+        viewCompaction: this.stateCompactor.metrics,
+        entityCounts: result.entityCounts,
+        workerMemory: result.workerMemory,
+        processMemory: process.memoryUsage(),
+        viewDelivery: [...this.viewConnections.values()].map((connection) =>
+          connection.diagnostics(),
+        ),
         clockDebtMs: Math.max(0, performance.now() - this.simulationDeadline),
       });
   }
@@ -1509,7 +1539,7 @@ export class GameServer {
         );
       }
     });
-    client.ws.on("close", () => {
+    client.ws.on("close", (code, reason) => {
       this.viewConnections.get(client.ws)?.stop();
       this.viewConnections.delete(client.ws);
       this.viewGeneration.delete(client.ws);
@@ -1517,6 +1547,8 @@ export class GameServer {
       if (this.gameConfig.fogOfWar)
         void this.simulation?.forgetViewer(client.clientID).catch(() => {});
       this.log.info("client disconnected", {
+        closeCode: code,
+        closeReason: reason?.toString().slice(0, 160) ?? "",
         clientID: client.clientID,
         persistentID: client.persistentID,
       });
@@ -2539,8 +2571,11 @@ export class GameServer {
           clientID: player.clientID,
           username: player.username,
           clanTag: player.clanTag,
-          persistentID:
-            this.allClients.get(player.clientID)?.persistentID ?? "",
+          persistentID: archiveIdentity(
+            this.allClients.get(player.clientID)?.persistentID,
+            this.id,
+            player.clientID,
+          ),
           stats,
           cosmetics: player.cosmetics,
           // Simulation inputs: teamIndex pins matchmade teams, friends bias

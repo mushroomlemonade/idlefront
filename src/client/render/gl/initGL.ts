@@ -10,7 +10,6 @@
  */
 
 import type { WebGLGateStatus } from "../../components/WebGLGate";
-import { getPaletteSize } from "./utils/ColorUtils";
 
 export type GLResult =
   | { gl: WebGL2RenderingContext; status: "ok" }
@@ -29,7 +28,7 @@ export type GLResult =
 // privacy.resistFingerprinting (on by default in LibreWolf, opt-in in
 // Firefox) caps MAX_TEXTURE_SIZE at 2048. "limited" still returns the
 // context: the player is warned with fix instructions but may continue.
-const REQUIRED_TEXTURE_SIZE = getPaletteSize();
+const REQUIRED_TEXTURE_SIZE = 4096; // Owner palettes/name rows are folded below this edge.
 
 // Renderer strings reported by software WebGL backends. Mirrors the detection
 // in utilities/Diagnostic.ts.

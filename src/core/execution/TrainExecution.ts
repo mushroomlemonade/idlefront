@@ -69,6 +69,8 @@ export class TrainExecution implements Execution {
       return;
     }
     this.train = this.createTrainUnits(spawn);
+    if (mg.config().gameConfig().tradeCorridors)
+      this.currentRailroad?.recordTrip(ticks);
 
     const carUnitIds = this.cars.map((c) => c.id());
     const pathTiles: TileRef[] = [];
@@ -230,6 +232,8 @@ export class TrainExecution implements Execution {
       const railRoad = getOrientedRailroad(this.stations[0], this.stations[1]);
       if (railRoad) {
         this.currentRailroad = railRoad;
+        if (this.mg?.config().gameConfig().tradeCorridors)
+          railRoad.recordTrip(this.mg.ticks());
         return true;
       }
     }
@@ -246,6 +250,11 @@ export class TrainExecution implements Execution {
     if (this.currentRailroad === null || !this.canTradeWithDestination()) {
       return null;
     }
+    if (
+      this.mg?.config().gameConfig().tradeCorridors &&
+      !this.currentRailroad.isCurrent()
+    )
+      return null;
     this.saveTraversedTiles(this.currentTile, this.speed);
     this.currentTile = this.currentTile + this.speed;
     const leftOver = this.currentTile - this.currentRailroad.getTiles().length;

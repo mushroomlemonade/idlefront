@@ -511,6 +511,14 @@ export class Transport {
       console.log(
         `WebSocket closed. Code: ${event.code}, Reason: ${event.reason}`,
       );
+      window.dispatchEvent(
+        new CustomEvent("idlefront:diagnostic", {
+          detail: {
+            scope: "view-disconnect",
+            message: `code=${event.code} clean=${event.wasClean} reason=${event.reason}`,
+          },
+        }),
+      );
       if (event.code === 4009) {
         // Finish queued server messages first: the server sends the useful
         // error before closing. Do not stack a second alert over that panel.

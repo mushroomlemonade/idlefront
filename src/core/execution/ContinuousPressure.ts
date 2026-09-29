@@ -1,4 +1,5 @@
 import type { Game, Player } from "../game/Game";
+import { PressureContactIndex } from "../game/PressureContactIndex";
 import { hasPressureGrace } from "../game/PressureDiplomacy";
 import { AttackExecution } from "./AttackExecution";
 import { applyPressureStrategy } from "./PressureStrategy";
@@ -8,50 +9,13 @@ import { usesNationStrategy } from "./nation/NationStrategy";
  * Ownership/terrain changes invalidate only adjacent players. Military and
  * diplomatic balance is reconsidered once a game second, staggered by player.
  */
-class Frontiers {
-  private dirty = new Set<number>();
-  private contacts = new Map<number, Map<number, number>>();
-  private neighbors = [0, 0, 0, 0];
-  constructor(private game: Game) {
-    const invalidate = (tile: number, before: number, after: number) => {
-      this.dirty.add(before);
-      this.dirty.add(after);
-      const count = game.map().neighbors4(tile, this.neighbors);
-      for (let i = 0; i < count; i++)
-        this.dirty.add(game.ownerID(this.neighbors[i]));
-    };
-    game.observeTerritory(invalidate);
-    game
-      .map()
-      .observeTerrain?.((tile) =>
-        invalidate(tile, game.ownerID(tile), game.ownerID(tile)),
-      );
-  }
-  get(player: Player): Map<number, number> {
-    const id = player.smallID();
-    let result = this.contacts.get(id);
-    if (result && !this.dirty.has(id)) return result;
-    result = new Map();
-    for (const tile of player.borderTiles()) {
-      const count = this.game.map().neighbors4(tile, this.neighbors);
-      for (let i = 0; i < count; i++) {
-        const other = this.neighbors[i],
-          owner = this.game.ownerID(other);
-        if (
-          owner !== id &&
-          this.game.isLand(other) &&
-          !this.game.isImpassable(other)
-        )
-          result.set(owner, (result.get(owner) ?? 0) + 1);
-      }
-    }
-    this.contacts.set(id, result);
-    this.dirty.delete(id);
-    return result;
+class Frontiers extends PressureContactIndex {
+  constructor(game: Game) {
+    super(game);
   }
   width(player: Player): number {
     let width = 0;
-    for (const [id, count] of this.get(player)) {
+    for (const [id, count] of this.counts(player)) {
       const other = this.game.playerBySmallID(id);
       if (
         !hasPressureGrace(this.game, other) &&

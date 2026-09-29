@@ -20,6 +20,7 @@ describe("ViewSnapshot run compression", () => {
         terrainByte: () => 128,
       }),
       ticks: () => 50,
+      inSpawnPhase: () => false,
       allPlayers: () => [],
       units: () => [],
     };
@@ -56,6 +57,10 @@ describe("ViewSnapshot run compression", () => {
         terrainByte: () => 128,
       }),
       ticks: () => tick,
+      inSpawnPhase: () => false,
+      config: () => ({ gameConfig: () => ({}) }),
+      width: () => 8,
+      unit: () => undefined,
       allPlayers: () => [],
       units: () => [],
     };
@@ -108,6 +113,7 @@ describe("ViewSnapshot run compression", () => {
     const game = {
       map: () => map,
       ticks: () => 42,
+      inSpawnPhase: () => false,
       allPlayers: () => [],
       units: () => [],
     };

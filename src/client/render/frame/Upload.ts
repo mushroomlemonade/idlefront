@@ -17,14 +17,15 @@ import type { SpiralRibbon } from "./SpiralTrails";
  * Satisfied by GameView through TypeScript structural typing.
  */
 export interface FrameUploadTarget {
+  updateTradeCorridors?(data: Float32Array): void;
   setFog?(enabled: boolean): void;
   uploadTileAndTrailState(
-    tileState: Uint16Array,
+    tileState: Uint16Array | Uint32Array,
     trailState: Uint16Array,
     trailSparseState?: ReadonlyMap<number, number> | null,
   ): void;
   uploadLiveDelta(
-    tileState: Uint16Array,
+    tileState: Uint16Array | Uint32Array,
     changedTiles: readonly number[],
   ): void;
   uploadLiveTrailDelta(
@@ -66,6 +67,7 @@ export function uploadFrameData(
   view: FrameUploadTarget,
   frame: FrameData,
 ): void {
+  if (frame.tradeCorridors) view.updateTradeCorridors?.(frame.tradeCorridors);
   view.setFog?.(frame.fogEnabled ?? false);
   // --- Tiles + Trails ---
   // changedTiles[] means "only these tiles changed" (empty = nothing changed,
@@ -106,9 +108,9 @@ export function uploadFrameData(
   }
 
   // --- Units + structures ---
-  view.updateUnits(frame.mobileUnits, frame.tick);
-  if (frame.structuresDirty) {
-    view.updateStructures(frame.structures);
+  if (!frame.snapshotLoading) {
+    view.updateUnits(frame.mobileUnits, frame.tick);
+    if (frame.structuresDirty) view.updateStructures(frame.structures);
   }
 
   // --- Ephemeral effects ---
@@ -123,6 +125,7 @@ export function uploadFrameData(
   }
 
   // --- Attack rings + nuke telegraphs ---
+  if (frame.snapshotLoading) return;
   view.updateAttackRings(frame.attackRings);
   view.updateNukeTelegraphs(frame.nukeTelegraphs);
 

@@ -52,6 +52,12 @@ export abstract class StatsTable extends LitElement {
   public game: GameView | null = null;
 
   @property({ type: Boolean }) visible = false;
+  @property({ type: Boolean, reflect: true }) expanded = false;
+  @property({ type: Boolean }) compact = false;
+
+  private get hasPicker(): boolean {
+    return this.tableKind !== "player" || (!this.compact && !this.expanded);
+  }
 
   protected abstract readonly tableKind: StatsTableKind;
   protected abstract buildRows(
@@ -79,7 +85,12 @@ export abstract class StatsTable extends LitElement {
   }
 
   willUpdate(changed: Map<string, unknown>) {
-    if (changed.has("visible") && this.visible) {
+    if (
+      (changed.has("visible") ||
+        changed.has("expanded") ||
+        changed.has("compact")) &&
+      this.visible
+    ) {
       // The scroll container is recreated at scroll offset 0 when the table
       // was hidden, so the remembered offset would misplace the window.
       this.scrollOffsetPx = 0;
@@ -118,6 +129,13 @@ export abstract class StatsTable extends LitElement {
    * ones the ≡ menu has selected, in registry order.
    */
   private visibleColumns(): readonly ColumnDef[] {
+    if (this.tableKind === "player" && (this.compact || this.expanded)) {
+      return columnsFor("player").filter(
+        (column) =>
+          this.expanded ||
+          ["rank", "player", "tiles", "gold", "gdp"].includes(column.id),
+      );
+    }
     const selected = this.userSettings.statsColumns(this.tableKind);
     return columnsFor(this.tableKind).filter(
       (column) => !column.isHideable || selected.includes(column.id),
@@ -131,7 +149,26 @@ export abstract class StatsTable extends LitElement {
       this.sortKey = key;
       this.sortOrder = "desc";
     }
+    this.resetScroll();
     this.updateStats();
+    this.dispatchEvent(
+      new CustomEvent("leaderboard-sort", {
+        detail: { key, order: this.sortOrder },
+      }),
+    );
+  }
+
+  public sortBy(key: ColumnId, order: "asc" | "desc" = "desc") {
+    this.sortKey = key;
+    this.sortOrder = order;
+    this.resetScroll();
+    this.updateStats();
+  }
+
+  private resetScroll(): void {
+    this.scrollOffsetPx = 0;
+    const scroller = this.querySelector<HTMLElement>(".stats-table-scroll");
+    if (scroller) scroller.scrollTop = 0;
   }
 
   private onColumnsChanged(event: CustomEvent<ColumnId[]>) {
@@ -189,8 +226,8 @@ export abstract class StatsTable extends LitElement {
         visual.superscript
           ? html`<img
               class="size-[0.825rem] object-contain -ml-0.5 ${
-              visual.superscript.white === true ? "brightness-0 invert" : ""
-            }"
+                visual.superscript.white === true ? "brightness-0 invert" : ""
+              }"
               src=${visual.superscript.src}
               alt=""
               aria-hidden="true"
@@ -201,7 +238,10 @@ export abstract class StatsTable extends LitElement {
   }
 
   private renderHeaderCell(column: ColumnDef, index: number) {
-    const label = translateText(column.labelKey);
+    const label =
+      column.id === "gdp"
+        ? "gdp · completed asset value at standard prices"
+        : translateText(column.labelKey);
     const visual = this.renderHeaderVisual(column, label);
     const sorted = this.sortKey === column.id;
     return html`
@@ -230,12 +270,12 @@ export abstract class StatsTable extends LitElement {
               >
                 ${visual}
                 ${
-                sorted
-                  ? html`<span class="text-sky-300" aria-hidden="true"
-                      >${this.sortOrder === "asc" ? "↑" : "↓"}</span
-                    >`
-                  : nothing
-              }
+                  sorted
+                    ? html`<span class="text-sky-300" aria-hidden="true"
+                        >${this.sortOrder === "asc" ? "↑" : "↓"}</span
+                      >`
+                    : nothing
+                }
               </button>`
             : visual
         }
@@ -293,10 +333,14 @@ export abstract class StatsTable extends LitElement {
               borderClass,
             ),
         )}
-        <div
-          class="h-6 md:h-8 lg:h-9 ${DIVIDER_CLASS} ${borderClass}"
-          aria-hidden="true"
-        ></div>
+        ${
+          !this.hasPicker
+            ? nothing
+            : html`<div
+                class="h-6 md:h-8 lg:h-9 ${DIVIDER_CLASS} ${borderClass}"
+                aria-hidden="true"
+              ></div>`
+        }
       </div>
     `;
   }
@@ -343,7 +387,7 @@ export abstract class StatsTable extends LitElement {
     // spare width supplied by a wider sibling; fixed tracks never stretch.
     const gridTemplate = `${columns
       .map((column) => column.width)
-      .join(" ")} ${PICKER_TRACK}`;
+      .join(" ")}${this.hasPicker ? ` ${PICKER_TRACK}` : ""}`;
     const scrollHeight =
       pinnedRow === null
         ? "max-h-[7.5rem] md:max-h-[10rem] lg:max-h-[11.25rem]"
@@ -370,25 +414,31 @@ export abstract class StatsTable extends LitElement {
                 (column) => column.id,
                 (column, index) => this.renderHeaderCell(column, index),
               )}
-              <div
-                class="${CELL_CLASS} justify-center border-b border-b-slate-500 ${HEADER_DIVIDER_CLASS}"
-                role="columnheader"
-              >
-                <column-picker
-                  class="inline-flex"
-                  .columns=${columnsFor(this.tableKind).filter(
-                    (column) => column.isHideable,
-                  )}
-                  .selected=${this.userSettings.statsColumns(this.tableKind)}
-                  @columns-changed=${this.onColumnsChanged}
-                ></column-picker>
-              </div>
+              ${
+                !this.hasPicker
+                  ? nothing
+                  : html`<div
+                      class="${CELL_CLASS} justify-center border-b border-b-slate-500 ${HEADER_DIVIDER_CLASS}"
+                      role="columnheader"
+                    >
+                      <column-picker
+                        class="inline-flex"
+                        .columns=${columnsFor(this.tableKind).filter(
+                          (column) => column.isHideable,
+                        )}
+                        .selected=${this.userSettings.statsColumns(this.tableKind)}
+                        @columns-changed=${this.onColumnsChanged}
+                      ></column-picker>
+                    </div>`
+              }
             </div>
 
             <div
               class="stats-table-scroll ${scrollHeight} grid col-span-full overflow-y-scroll overflow-x-hidden"
               style="grid-template-columns: subgrid; grid-column: 1 / -1;"
               role="rowgroup"
+              tabindex="0"
+              aria-label="player standings scroll area"
               @scroll=${this.onScroll}
             >
               ${

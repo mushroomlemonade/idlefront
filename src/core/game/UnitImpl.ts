@@ -485,6 +485,7 @@ export class UnitImpl implements Unit {
 
   setUnderConstruction(underConstruction: boolean): void {
     if (this._underConstruction !== underConstruction) {
+      this._owner.invalidateUnitPriceCount(this.type());
       this._underConstruction = underConstruction;
       this.mg.addUpdate(this.toUpdate());
     }

@@ -30,6 +30,14 @@ export class ExactRouteCache implements PathFinder<number> {
     const key = this.key(from, to);
     return key !== undefined && this.entries.has(key);
   }
+  /** Immutable inspection for route preparation; undefined means not cached. */
+  peek(
+    from: number,
+    to: number,
+  ): Readonly<ArrayLike<number>> | null | undefined {
+    this.fresh();
+    return this.entries.get(this.key(from, to)!);
+  }
   store(from: number | number[], to: number, route: number[] | null) {
     this.fresh();
     const key = this.key(from, to);

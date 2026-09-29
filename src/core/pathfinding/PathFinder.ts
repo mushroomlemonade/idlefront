@@ -17,6 +17,8 @@ import { FailedRouteCache } from "./transformers/FailedRouteCache";
 import { MiniMapTransformer } from "./transformers/MiniMapTransformer";
 import { ShoreCoercingTransformer } from "./transformers/ShoreCoercingTransformer";
 import { SmoothingWaterTransformer } from "./transformers/SmoothingWaterTransformer";
+import { TradeCorridorRouter } from "./transformers/TradeCorridorRouter";
+import { WarshipCorridorRouter } from "./transformers/WarshipCorridorRouter";
 import { WaterRefinementTransformer } from "./transformers/WaterRefinementTransformer";
 import {
   PathFinder,
@@ -55,7 +57,7 @@ const _waterChainCache = new WeakMap<
   Game,
   {
     version: number;
-    chain: PathFinder<TileRef>;
+    chain: FailedRouteCache;
     exact: ExactRouteCache;
     refinement: WaterRefinementTransformer;
   }
@@ -78,6 +80,8 @@ function waterTerrainEpoch(game: Game): { value: number } {
 }
 
 function buildWaterChain(game: Game): WaterRefinementTransformer {
+  const epoch = waterTerrainEpoch(game);
+  const revision = () => `${epoch.value}:${game.waterGraphVersion()}`;
   const hpa = game.miniWaterHPA();
   const graph = game.miniWaterGraph();
   const miniMap = game.miniMap();
@@ -88,7 +92,7 @@ function buildWaterChain(game: Game): WaterRefinementTransformer {
       .wrap((pf) => new ShoreCoercingTransformer(pf, miniMap))
       .wrap((pf) => new MiniMapTransformer(pf, game.map(), miniMap))
       .build();
-    return new WaterRefinementTransformer(coarse, game.map());
+    return new WaterRefinementTransformer(coarse, game.map(), revision);
   }
 
   const componentCheckFn = (t: TileRef) => graph.getComponentId(t);
@@ -98,7 +102,31 @@ function buildWaterChain(game: Game): WaterRefinementTransformer {
     .wrap((pf) => new ShoreCoercingTransformer(pf, miniMap))
     .wrap((pf) => new MiniMapTransformer(pf, game.map(), miniMap))
     .build();
-  return new WaterRefinementTransformer(coarse, game.map());
+  return new WaterRefinementTransformer(coarse, game.map(), revision);
+}
+
+const tradeChains = new WeakMap<Game, TradeCorridorRouter>();
+export function waterRouteDiagnostics(game: Game) {
+  const chain = _waterChainCache.get(game)?.chain;
+  return chain
+    ? { ...chain.metrics, failures: chain.failureSamples }
+    : undefined;
+}
+function tradeWaterChain(game: Game): PathFinder<TileRef> {
+  const settings = game.config().gameConfig().tradeCorridors;
+  if (!settings) return sharedWaterChain(game);
+  let chain = tradeChains.get(game);
+  if (!chain) {
+    chain = new TradeCorridorRouter(
+      { findPath: (from, to) => sharedWaterChain(game).findPath(from, to) },
+      (a, b) => game.manhattanDist(a, b),
+      () => `${waterTerrainEpoch(game).value}:${game.waterGraphVersion()}`,
+      () => game.ticks(),
+      settings,
+    );
+    tradeChains.set(game, chain);
+  }
+  return chain;
 }
 
 function sharedWaterChain(game: Game): PathFinder<TileRef> {
@@ -116,6 +144,24 @@ function sharedWaterChain(game: Game): PathFinder<TileRef> {
   return chain;
 }
 
+function shipWaterChain(
+  game: Game,
+  mode: boolean | "warship",
+): PathFinder<TileRef> {
+  if (mode === true) return tradeWaterChain(game);
+  if (
+    mode === "warship" &&
+    game.config().gameConfig().tradeCorridors?.warshipRouting === "shared-v1"
+  ) {
+    return new WarshipCorridorRouter(
+      { findPath: (from, to) => sharedWaterChain(game).findPath(from, to) },
+      tradeWaterChain(game),
+      (a, b) => game.manhattanDist(a, b),
+    );
+  }
+  return sharedWaterChain(game);
+}
+
 /** Only pure route calculations run ahead. The normal tick still validates
  * spawns, ownership, targets and costs, and consumes results in its old order. */
 export async function prepareWaterRoutes(
@@ -127,20 +173,42 @@ export async function prepareWaterRoutes(
   sharedWaterChain(game);
   const state = _waterChainCache.get(game)!;
   const revision = `${waterTerrainEpoch(game).value}:${game.waterGraphVersion()}`;
-  const jobs = hints
-    .filter((q) => !state.exact.has(q.from, q.to))
-    .map((q) => ({ ...q, route: state.refinement.coarsePath(q.from, q.to) }));
-  if (!jobs.length) return;
-  const results = await execute(jobs);
-  if (results.length !== jobs.length)
-    throw new Error("Incomplete navigation batch");
-  if (
-    revision !== `${waterTerrainEpoch(game).value}:${game.waterGraphVersion()}`
-  )
-    return;
-  // Explicit job ordering, regardless of worker completion order.
-  for (let i = 0; i < jobs.length; i++)
-    state.exact.store(jobs[i].from, jobs[i].to, results[i]);
+  const corridor = hints.some((q) => q.corridor)
+    ? tradeWaterChain(game)
+    : undefined;
+  // Two bounded phases: connectors first, then only necessary fallbacks.
+  for (let phase = 0; phase < 2; phase++) {
+    const requests = new Map<string, { from: number; to: number }>();
+    for (const hint of hints) {
+      const planned =
+        hint.corridor && corridor instanceof TradeCorridorRouter
+          ? corridor.preparationRequests(hint.from, hint.to, (a, b) =>
+              state.exact.peek(a, b),
+            )
+          : [hint];
+      for (const q of planned) requests.set(`${q.from}:${q.to}`, q);
+    }
+    const jobs = [...requests.values()]
+      .filter((q) => !state.exact.has(q.from, q.to))
+      .filter((q) => {
+        if (!state.refinement.provenDisconnected(q.from, q.to)) return true;
+        state.exact.store(q.from, q.to, null);
+        return false;
+      })
+      .map((q) => ({ ...q, route: state.refinement.coarsePath(q.from, q.to) }));
+    if (!jobs.length) continue;
+    const results = await execute(jobs);
+    if (results.length !== jobs.length)
+      throw new Error("Incomplete navigation batch");
+    if (
+      revision !==
+      `${waterTerrainEpoch(game).value}:${game.waterGraphVersion()}`
+    )
+      return;
+    // Explicit job ordering, regardless of worker completion order.
+    for (let i = 0; i < jobs.length; i++)
+      state.exact.store(jobs[i].from, jobs[i].to, results[i]);
+  }
 }
 
 /**
@@ -195,6 +263,7 @@ export class PathFinding {
  */
 export class WaterPathFinder implements SteppingPathFinder<TileRef> {
   private stepper: PathFinderStepper<TileRef>;
+  private tacticalStepper?: PathFinderStepper<TileRef>;
   private _waterGraphVersion: number;
   private _rebuilt = false;
 
@@ -211,9 +280,10 @@ export class WaterPathFinder implements SteppingPathFinder<TileRef> {
   constructor(
     private game: Game,
     private _stagger: number = 0,
+    private trade: boolean | "warship" = false,
   ) {
     this.stepper = new PathFinderStepper(
-      sharedWaterChain(game),
+      shipWaterChain(game, trade),
       tileStepperConfig(game),
     );
     this._waterGraphVersion = game.waterGraphVersion();
@@ -251,14 +321,32 @@ export class WaterPathFinder implements SteppingPathFinder<TileRef> {
     // which forces an A* re-run on the next call against the new graph.
     this._waterGraphVersion = v;
     this.stepper = new PathFinderStepper(
-      sharedWaterChain(this.game),
+      shipWaterChain(this.game, this.trade),
       tileStepperConfig(this.game),
     );
     this._rebuilt = true;
+    this.tacticalStepper = undefined;
   }
 
-  next(from: TileRef, to: TileRef, dist?: number): PathResult<TileRef> {
+  next(
+    from: TileRef,
+    to: TileRef,
+    dist?: number,
+    tactical = false,
+  ): PathResult<TileRef> {
     this.ensureFresh();
+    if (
+      tactical &&
+      this.trade === "warship" &&
+      this.game.config().gameConfig().tradeCorridors?.warshipRouting ===
+        "shared-v1"
+    ) {
+      this.tacticalStepper ??= new PathFinderStepper(
+        { findPath: (a, b) => sharedWaterChain(this.game).findPath(a, b) },
+        tileStepperConfig(this.game),
+      );
+      return this.tacticalStepper.next(from, to, dist);
+    }
     return this.stepper.next(from, to, dist);
   }
 
@@ -283,6 +371,7 @@ export class WaterPathFinder implements SteppingPathFinder<TileRef> {
 
   invalidate(): void {
     this.stepper.invalidate();
+    this.tacticalStepper?.invalidate();
   }
 }
 

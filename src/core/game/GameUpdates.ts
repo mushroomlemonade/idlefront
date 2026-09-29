@@ -18,6 +18,8 @@ import {
 import { TileRef } from "./GameMap";
 
 export interface GameUpdateViewData {
+  /** Authoritative current corridor snapshot: [tileA,tileB,heat65535,isSea]. */
+  packedTradeCorridors?: Uint32Array;
   /** Authoritative presentation visibility; never supplied by the client. */
   fog?: {
     enabled: true;

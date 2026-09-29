@@ -28,6 +28,7 @@ import {
 // consumers don't pull in GPURenderer and its shaders — see note above.
 import {
   EFFECT_PALETTE_BLOCKS,
+  getPaletteSize,
   MAX_TRAIL_COLORS,
   STRUCTURES_EFFECT_BLOCK,
   WARSHIP_EFFECT_BLOCK,
@@ -38,8 +39,6 @@ import {
   UT_MIRV_WARHEAD,
 } from "./render/types/UnitType";
 import type { GameView } from "./view";
-
-const PALETTE_SIZE = 4096;
 
 // A human player counts as "small" (and glows) at or below this fraction of the
 // map; the glow is suppressed for a grace window after the game starts.
@@ -124,6 +123,7 @@ export function attributesToExplosionParams(
  *      helper, which dispatches to all the view.update*() methods.
  */
 export class WebGLFrameBuilder {
+  private readonly paletteSize = getPaletteSize();
   private readonly palette: Float32Array;
   // Per-player effect palette, keyed by smallID. Layout is
   // 4096×(MAX_TRAIL_COLORS·EFFECT_PALETTE_BLOCKS): block 0 (rows 0–7) =
@@ -159,12 +159,12 @@ export class WebGLFrameBuilder {
   private terrainDeltaBytes: Uint8Array = new Uint8Array(0);
 
   constructor(private readonly view: MapRenderer) {
-    this.palette = new Float32Array(PALETTE_SIZE * 2 * 4);
+    this.palette = new Float32Array(this.paletteSize * 2 * 4);
     this.effectPalette = new Float32Array(
-      PALETTE_SIZE * MAX_TRAIL_COLORS * EFFECT_PALETTE_BLOCKS * 4,
+      this.paletteSize * MAX_TRAIL_COLORS * EFFECT_PALETTE_BLOCKS * 4,
     );
-    this.patternMeta = new Float32Array(PALETTE_SIZE * 4);
-    this.patternData = new Uint8Array(PALETTE_SIZE * 1024);
+    this.patternMeta = new Float32Array(this.paletteSize * 4);
+    this.patternData = new Uint8Array(this.paletteSize * 1024);
   }
 
   /** Drop internal caches to force a full re-upload of state on the next update(). */
@@ -202,10 +202,16 @@ export class WebGLFrameBuilder {
     this.view.refreshNames(displayNames);
   }
 
-  private readonly highlightSetBuf = new Uint8Array(PALETTE_SIZE);
+  private readonly highlightSetBuf = new Uint8Array(this.paletteSize);
   private glowRescanTick = 0;
 
   update(gameView: GameView): void {
+    if (gameView.frameData().snapshotLoading) {
+      this.syncTerrainDeltas(gameView);
+      this.syncNukeImpacts(gameView);
+      uploadFrameData(this.view, gameView.frameData());
+      return;
+    }
     this.syncPlayers(gameView);
     this.syncPlayerEffects(gameView);
     this.syncPlayerSpawns(gameView);
@@ -584,7 +590,7 @@ export class WebGLFrameBuilder {
       .slice(0, MAX_TRAIL_COLORS)
       .map((c) => c.toRgb());
     for (let r = 0; r < MAX_TRAIL_COLORS; r++) {
-      const off = ((rowBase + r) * PALETTE_SIZE + smallID) * 4;
+      const off = ((rowBase + r) * this.paletteSize + smallID) * 4;
       const c = colors[r] ?? { r: 0, g: 0, b: 0 };
       this.effectPalette[off] = c.r / 255;
       this.effectPalette[off + 1] = c.g / 255;
@@ -608,7 +614,7 @@ export class WebGLFrameBuilder {
       scalar1 = attrs.movementSpeed;
     }
     const alpha = (row: number) =>
-      ((rowBase + row) * PALETTE_SIZE + smallID) * 4 + 3;
+      ((rowBase + row) * this.paletteSize + smallID) * 4 + 3;
     this.effectPalette[alpha(0)] = colors.length;
     this.effectPalette[alpha(1)] = styleId;
     this.effectPalette[alpha(2)] = scalar0;
@@ -629,7 +635,7 @@ export class WebGLFrameBuilder {
     this.palette[fillOff + 3] = 150 / 255;
 
     const borderRgba = border.toRgb();
-    const borderOff = PALETTE_SIZE * 4 + smallID * 4;
+    const borderOff = this.paletteSize * 4 + smallID * 4;
     this.palette[borderOff] = borderRgba.r / 255;
     this.palette[borderOff + 1] = borderRgba.g / 255;
     this.palette[borderOff + 2] = borderRgba.b / 255;

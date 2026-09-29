@@ -1,6 +1,7 @@
 import { Execution, Game, Unit, UnitType } from "../game/Game";
 import { TrainStation } from "../game/TrainStation";
 import { PseudoRandom } from "../PseudoRandom";
+import { tradeRouteAcceptance, tradeSpawnRate } from "../TradeCorridors";
 import { TrainExecution } from "./TrainExecution";
 
 export class TrainStationExecution implements Execution {
@@ -55,7 +56,20 @@ export class TrainStationExecution implements Execution {
       .config()
       .trainSpawnRate(this.unit.owner().unitCount(UnitType.Factory));
     for (let i = 0; i < this.unit!.level(); i++) {
-      if (this.random.chance(spawnRate)) {
+      if (
+        this.random.chance(
+          Math.max(
+            1,
+            Math.ceil(
+              spawnRate /
+                tradeSpawnRate(
+                  this.mg.config().gameConfig().tradeCorridors,
+                  this.mg.ticks(),
+                ),
+            ),
+          ),
+        )
+      ) {
         return true;
       }
     }
@@ -84,6 +98,13 @@ export class TrainStationExecution implements Execution {
     const destination = cluster.randomTradeDestination(owner, this.random);
     if (destination === null) return;
     if (destination === station) return;
+    const acceptance = tradeRouteAcceptance(
+      this.mg,
+      this.mg.config().gameConfig().tradeCorridors,
+      `rail:${station.id}:${destination.id}`,
+      currentTick,
+    );
+    if (acceptance < 1 && this.random.next() >= acceptance) return;
 
     this.mg.addExecution(
       new TrainExecution(

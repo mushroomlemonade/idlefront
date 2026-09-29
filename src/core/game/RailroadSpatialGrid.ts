@@ -57,7 +57,11 @@ export class RailSpatialGrid {
     this.railToCells.delete(rail);
   }
 
-  query(tile: TileRef, radius: number): Set<Railroad> {
+  query(
+    tile: TileRef,
+    radius: number,
+    maxCandidates = Infinity,
+  ): Set<Railroad> {
     const x = this.game.x(tile);
     const y = this.game.y(tile);
 
@@ -77,6 +81,7 @@ export class RailSpatialGrid {
         if (!set) continue;
         for (const rail of set) {
           result.add(rail);
+          if (result.size >= maxCandidates) return result;
         }
       }
     }

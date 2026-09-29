@@ -198,15 +198,47 @@ describe("headless simulation and rendering parity", () => {
       );
       const actions = decodeViewPacket(
         (
-          await host.query({
-            type: "player_actions",
-            id: "query1",
-            playerID: reference.game.playerByClientID("human001")!.id(),
-            units: null,
-          }, "human001")
+          await host.query(
+            {
+              type: "player_actions",
+              id: "query1",
+              playerID: reference.game.playerByClientID("human001")!.id(),
+              units: null,
+            },
+            "human001",
+          )
         ).bytes.buffer as ArrayBuffer,
       );
       expect(actions.kind).toBe("result");
+      const historyQuery = {
+        type: "world_history" as const,
+        id: "history",
+        playerID: 0,
+        metric: "tiles" as const,
+        ascending: false,
+      };
+      const unattendedHistory = decodeViewPacket(
+        (await host.query(historyQuery, "human001")).bytes
+          .buffer as ArrayBuffer,
+      );
+      expect(unattendedHistory.kind).toBe("result");
+      if (
+        unattendedHistory.kind !== "result" ||
+        unattendedHistory.message.type !== "world_history_result"
+      )
+        throw new Error("Expected authoritative history");
+      expect(unattendedHistory.message.result.series.length).toBeGreaterThan(0);
+      expect(
+        unattendedHistory.message.result.series.some(
+          (s) => s.points.length > 0,
+        ),
+      ).toBe(true);
+      expect(
+        decodeViewPacket(
+          (await host.query(historyQuery, "human001")).bytes
+            .buffer as ArrayBuffer,
+        ),
+      ).toEqual(unattendedHistory);
       for (let turnNumber = 350; turnNumber < 365; turnNumber++) {
         const turn = { turnNumber, intents: [] };
         reference.addTurn(turn);
@@ -259,6 +291,12 @@ describe("headless simulation and rendering parity", () => {
           ),
         ).toBe(true);
         const restored = await recovering.snapshot();
+        expect(
+          decodeViewPacket(
+            (await recovering.query(historyQuery, "human001")).bytes
+              .buffer as ArrayBuffer,
+          ),
+        ).toEqual(unattendedHistory);
         expect(restored.tick).toBe(350);
         expect(restored.packets.map((p) => [...p])).toEqual(
           snap.packets.map((p) => [...p]),

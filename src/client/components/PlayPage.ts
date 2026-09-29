@@ -39,7 +39,7 @@ export class PlayPage extends LitElement {
               aria-label="Attribution and source"
             >
               <span aria-label="version"
-                >${import.meta.env.DEV ? "v26.4 · dev" : "v26.4"}</span
+                >${import.meta.env.DEV ? "v26.5 · dev" : "v26.5"}</span
               >
               <span>© OpenFront and Contributors</span>
               <span class="atlas-compliance-rail__disclosure"

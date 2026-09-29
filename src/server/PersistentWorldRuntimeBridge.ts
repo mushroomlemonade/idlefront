@@ -5,6 +5,7 @@ import {
   type PersistentWorld,
 } from "../core/PersistentWorldSchemas";
 import { GameConfigSchema, UsernameSchema } from "../core/Schemas";
+import { tradeCorridorsForPreset } from "../core/TradeCorridors";
 import { generateID } from "../core/Util";
 import { WORLD_PRESETS } from "../core/WorldPresets";
 import type {
@@ -263,6 +264,7 @@ export class PersistentWorldRuntimeBridge implements PersistentWorldRuntimeCoord
             continuousPressure: "v1",
             fleetAutomation: "v26.3",
             nationStrategy: "v2",
+            warshipPatrolScheduling: "v1",
             allianceProtectionMinutes: preset.allianceProtectionMinutes,
             pressureGraceSeconds: preset.pressureGraceSeconds,
             passiveWildernessExpansion: true,
@@ -278,6 +280,9 @@ export class PersistentWorldRuntimeBridge implements PersistentWorldRuntimeCoord
       gameMap: preset.map,
       tradeShipTrafficMultiplier: preset.trade,
       trainTrafficMultiplier: preset.trains,
+      tradeCorridors: tradeCorridorsForPreset(
+        world.gamePreset ?? "scheduled-earth",
+      ),
       territoryAttackSpeedDivisor: preset.attackDivisor,
       ...("fog" in preset
         ? { fogOfWar: preset.fog, fogBotActivity: preset.fog }
@@ -287,7 +292,18 @@ export class PersistentWorldRuntimeBridge implements PersistentWorldRuntimeCoord
       // economy, AI, combat, structures and explicit timers remain unchanged.
       disableForcedTimeLimit: world.targetDuration !== "1h",
       gameMapSize: GameMapSize.Normal,
-      bots: world.gamePreset === "quickplay" ? 200 : 2000,
+      bots:
+        world.gamePreset === "longplay" &&
+        ["3000", "16000"].includes(process.env.IDLE_LONGPLAY_STRESS_BOTS ?? "")
+          ? Number(process.env.IDLE_LONGPLAY_STRESS_BOTS)
+          : world.gamePreset === "quickplay"
+            ? 200
+            : 2000,
+      longplayStressTest:
+        world.gamePreset === "longplay" &&
+        ["3000", "16000"].includes(process.env.IDLE_LONGPLAY_STRESS_BOTS ?? "")
+          ? "owner16-v1"
+          : undefined,
       nations: "default",
       difficulty: Difficulty.Medium,
       gameType: GameType.Private,

@@ -251,6 +251,7 @@ export class UnitPass {
 
   // Trade-friendly detection: enemy trade ships heading to a self/allied port
   private localPlayerID = 0;
+  private tradeLaneVariation = false;
   private friendlyOwners = new Set<number>();
   private structures: Map<number, UnitState> = new Map();
 
@@ -268,6 +269,8 @@ export class UnitPass {
     this.paletteTex = paletteTex;
     this.effectTex = effectTex;
     this.tickIntervalMs = config.msPerTick();
+    this.tradeLaneVariation =
+      (config.gameConfig().pressurePacing?.populationGrowthMultiplier ?? 1) < 1;
 
     // Build unitType string → atlas column mapping
     for (let i = 0; i < header.unitTypes.length; i++) {
@@ -524,7 +527,14 @@ export class UnitPass {
           this.emitMissile(lx, ly, unit.ownerID, atlasIdx, flags);
         }
       } else {
-        this.emitGround(x, y, unit.ownerID, atlasIdx, flags);
+        // Tiny stable visual lane variation; never moves authoritative tiles,
+        // hit tests, route endpoints, income, or pirate interactions.
+        const offset =
+          this.tradeLaneVariation && unit.unitType === UT_TRADE_SHIP
+            ? (((Math.imul(unit.id, 2654435761) >>> 0) % 1024) / 1023 - 0.5) *
+              0.6
+            : 0;
+        this.emitGround(x + offset, y - offset, unit.ownerID, atlasIdx, flags);
       }
     }
 

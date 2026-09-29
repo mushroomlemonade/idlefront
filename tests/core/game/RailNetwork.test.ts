@@ -69,6 +69,7 @@ describe("RailNetworkImpl", () => {
       nearbyUnits: vi.fn(() => []),
       addExecution: vi.fn(),
       config: () => ({
+        gameConfig: () => ({}),
         trainStationMaxRange: () => 80,
         trainStationMinRange: () => 10,
         railroadMaxSize: () => 100,

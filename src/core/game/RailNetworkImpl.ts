@@ -1,4 +1,6 @@
 import { PathFinding } from "../pathfinding/PathFinder";
+import { RailCorridorRouter } from "../pathfinding/RailCorridorRouter";
+import { railTrunkConnection } from "../pathfinding/RailTrunkConnector";
 import { Game, Unit, UnitType } from "./Game";
 import { TileRef } from "./GameMap";
 import { GameUpdateType } from "./GameUpdates";
@@ -87,6 +89,7 @@ export class RailNetworkImpl implements RailNetwork {
   private railGrid: RailSpatialGrid;
   private nextId: number = 0;
   private dirtyClusters = new Set<Cluster>();
+  private corridorRouter?: RailCorridorRouter;
 
   constructor(
     private game: Game,
@@ -156,6 +159,13 @@ export class RailNetworkImpl implements RailNetwork {
    * Return the intermediary stations connecting two stations
    */
   findStationsPath(from: TrainStation, to: TrainStation): TrainStation[] {
+    if (this.game.config().gameConfig().tradeCorridors) {
+      this.corridorRouter ??= new RailCorridorRouter(
+        this.game,
+        this.pathService,
+      );
+      return this.corridorRouter.find(from, to);
+    }
     return this.pathService.findStationsPath(from, to);
   }
 
@@ -192,6 +202,9 @@ export class RailNetworkImpl implements RailNetwork {
         rail.tiles.slice(closestRailIndex),
         this.nextId++,
       );
+      if (this.game.config().gameConfig().tradeCorridors) {
+        rail.replaceWith([newRailFrom, newRailTo]);
+      }
 
       // New station is connected to both new rails
       station.addRailroad(newRailFrom);
@@ -302,7 +315,7 @@ export class RailNetworkImpl implements RailNetwork {
         continue;
       }
 
-      const path = this.pathService.findTilePath(tile, targetTile);
+      const path = this.findTileConnection(tile, targetTile);
       if (path.length > 0 && path.length < maxPathSize) {
         paths.push(path);
         if (neighborStation) {
@@ -377,7 +390,7 @@ export class RailNetworkImpl implements RailNetwork {
   }
 
   private connect(from: TrainStation, to: TrainStation) {
-    const path = this.pathService.findTilePath(from.tile(), to.tile());
+    const path = this.findTileConnection(from.tile(), to.tile());
     if (path.length > 0 && path.length < this.game.config().railroadMaxSize()) {
       const railroad = new Railroad(from, to, path, this.nextId++);
       this.game.addUpdate({
@@ -391,6 +404,23 @@ export class RailNetworkImpl implements RailNetwork {
       return true;
     }
     return false;
+  }
+
+  private findTileConnection(from: TileRef, to: TileRef): TileRef[] {
+    if (
+      this.game.config().gameConfig().tradeCorridors?.routing === "shared-v2" &&
+      this.game.manhattanDist(from, to) >= 48
+    ) {
+      const shared = railTrunkConnection(
+        this.game,
+        this.pathService,
+        from,
+        to,
+        this.railGrid.query(from, 24, 32),
+      );
+      if (shared) return shared;
+    }
+    return this.pathService.findTilePath(from, to);
   }
 
   private distanceFrom(

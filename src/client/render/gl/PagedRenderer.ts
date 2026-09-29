@@ -28,22 +28,24 @@ import { NukeTelegraphPass } from "./passes/NukeTelegraphPass";
 import { NukeTrajectoryPass } from "./passes/NukeTrajectoryPass";
 import { OverviewMapPass } from "./passes/OverviewMapPass";
 import { RangeCirclePass } from "./passes/RangeCirclePass";
-import { SelectionBoxPass, type SelectionEntry } from "./passes/SelectionBoxPass";
+import {
+  SelectionBoxPass,
+  type SelectionEntry,
+} from "./passes/SelectionBoxPass";
 import { SparseRailroadPass } from "./passes/SparseRailroadPass";
 import { SparseTrailPass } from "./passes/SparseTrailPass";
 import type { SpawnCenter } from "./passes/SpawnOverlayPass";
 import { StructureLevelPass } from "./passes/StructureLevelPass";
 import { StructurePass } from "./passes/StructurePass";
+import { TradeCorridorPass } from "./passes/TradeCorridorPass";
 import { UnitPass } from "./passes/UnitPass";
-import {
-  type AttackTroopLabel,
-  WorldTextPass,
-} from "./passes/WorldTextPass";
+import { type AttackTroopLabel, WorldTextPass } from "./passes/WorldTextPass";
 import type { RenderSettings } from "./RenderSettings";
 import {
   EFFECT_PALETTE_BLOCKS,
   getPaletteSize,
   MAX_TRAIL_COLORS,
+  ownerPaletteShape,
 } from "./utils/ColorUtils";
 import { renderDpr } from "./utils/Dpr";
 import { createTexture2D } from "./utils/GlUtils";
@@ -54,9 +56,19 @@ import { createTexture2D } from "./utils/GlUtils";
  * is fixed-size and native-resolution detail is supplied by an LRU page atlas.
  */
 export class PagedRenderer {
+  private corridorPass?: TradeCorridorPass;
+  updateTradeCorridors(data: Float32Array): void {
+    this.corridorPass ??= new TradeCorridorPass(this.gl);
+    this.corridorPass.update(data);
+    this.railroadPass.setTrafficMode(true);
+  }
   private fogEnabled = false;
-  private readonly fogReducedMotion = typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
-  setFog(enabled: boolean): void { this.fogEnabled = enabled; }
+  private readonly fogReducedMotion =
+    typeof matchMedia !== "undefined" &&
+    matchMedia("(prefers-reduced-motion: reduce)").matches;
+  setFog(enabled: boolean): void {
+    this.fogEnabled = enabled;
+  }
   private readonly gl: WebGL2RenderingContext;
   private readonly camera: Camera;
   private readonly overviewPass: OverviewMapPass;
@@ -140,8 +152,7 @@ export class PagedRenderer {
     this.cameraY = header.mapHeight / 2;
     this.paletteData = new Float32Array(paletteData);
     this.paletteTex = createTexture2D(this.gl, {
-      width: getPaletteSize(),
-      height: 2,
+      ...ownerPaletteShape(2),
       internalFormat: this.gl.RGBA32F,
       format: this.gl.RGBA,
       type: this.gl.FLOAT,
@@ -149,8 +160,7 @@ export class PagedRenderer {
       filter: this.gl.NEAREST,
     });
     this.effectTex = createTexture2D(this.gl, {
-      width: getPaletteSize(),
-      height: MAX_TRAIL_COLORS * EFFECT_PALETTE_BLOCKS,
+      ...ownerPaletteShape(MAX_TRAIL_COLORS * EFFECT_PALETTE_BLOCKS),
       internalFormat: this.gl.RGBA32F,
       format: this.gl.RGBA,
       type: this.gl.FLOAT,
@@ -173,11 +183,7 @@ export class PagedRenderer {
       this.effectTex,
       settings,
     );
-    this.structureLevelPass = new StructureLevelPass(
-      this.gl,
-      header,
-      settings,
-    );
+    this.structureLevelPass = new StructureLevelPass(this.gl, header, settings);
     this.unitPass = new UnitPass(
       this.gl,
       header,
@@ -236,7 +242,7 @@ export class PagedRenderer {
   }
 
   uploadTileAndTrailState(
-    _tiles: Uint16Array,
+    _tiles: Uint16Array | Uint32Array,
     _trails: Uint16Array,
     sparseTrails?: ReadonlyMap<number, number> | null,
   ): void {
@@ -245,7 +251,7 @@ export class PagedRenderer {
   }
 
   uploadLiveDelta(
-    _tileState: Uint16Array,
+    _tileState: Uint16Array | Uint32Array,
     changedTiles: readonly number[],
   ): void {
     this.overviewPass.applyChangedTiles(changedTiles);
@@ -269,8 +275,8 @@ export class PagedRenderer {
       0,
       0,
       0,
-      getPaletteSize(),
-      2,
+      ownerPaletteShape(2).width,
+      ownerPaletteShape(2).height,
       this.gl.RGBA,
       this.gl.FLOAT,
       this.paletteData,
@@ -285,8 +291,8 @@ export class PagedRenderer {
       0,
       0,
       0,
-      getPaletteSize(),
-      MAX_TRAIL_COLORS * EFFECT_PALETTE_BLOCKS,
+      ownerPaletteShape(MAX_TRAIL_COLORS * EFFECT_PALETTE_BLOCKS).width,
+      ownerPaletteShape(MAX_TRAIL_COLORS * EFFECT_PALETTE_BLOCKS).height,
       this.gl.RGBA,
       this.gl.FLOAT,
       data,
@@ -460,11 +466,15 @@ export class PagedRenderer {
     gl.disable(gl.BLEND);
     gl.clearColor(60 / 255, 60 / 255, 60 / 255, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
-    this.overviewPass.setFogRendering(this.fogEnabled, this.fogReducedMotion ? 0 : performance.now() / 1000);
+    this.overviewPass.setFogRendering(
+      this.fogEnabled,
+      this.fogReducedMotion ? 0 : performance.now() / 1000,
+    );
     this.overviewPass.draw(cam);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     this.railroadPass.draw(cam, zoom, this.resolutionScale);
+    this.corridorPass?.draw(cam, zoom);
     this.unitPass.drawGround(cam);
     this.rangeCirclePass.draw(cam);
     this.nukeTrajectoryPass.draw(cam);
@@ -523,6 +533,7 @@ export class PagedRenderer {
     this.crosshairPass.dispose();
     this.selectionBoxPass.dispose();
     this.railroadPass.dispose();
+    this.corridorPass?.dispose();
     this.trailPass.dispose();
     this.moveIndicatorPass.dispose();
     this.nukeTrajectoryPass.dispose();

@@ -15,8 +15,10 @@ import {
   decodeViewPacket,
   encodeViewPacket,
 } from "../../core/network/ViewProtocol";
+import { CorridorHistory } from "./CorridorHistory";
 import { projectFogTerrain } from "./FogTileProjection";
 import type { FogViewProjection } from "./FogViewProjection";
+import { WorldHistory } from "./WorldHistory";
 
 // A packet expands to at most this many client-side tile writes. Keeping the
 // work bounded gives mobile Safari/Expo a regular event-loop yield for input,
@@ -43,6 +45,8 @@ export function emptyView(tick: number): GameUpdateViewData {
 
 /** Bounded by current map state, never by world age. No simulation checkpoint. */
 export class ViewSnapshot {
+  readonly corridors: CorridorHistory;
+  readonly history: WorldHistory;
   private changed: Uint32Array;
   private destroyedLayerTiles: Uint32Array | undefined;
   private rails = new Map<number, RailroadConstructionUpdate>();
@@ -51,12 +55,23 @@ export class ViewSnapshot {
   private win: GameUpdates[GameUpdateType.Win] = [];
   private motionPlans = new Map<number, MotionPlanRecord>();
   constructor(private runner: GameRunner) {
+    this.corridors = new CorridorHistory(runner.game);
+    this.history = new WorldHistory(runner.game);
     const map = runner.game.map();
     this.changed = new Uint32Array(
       Math.ceil((map.width() * map.height()) / 32),
     );
   }
   record(update: GameUpdateViewData): void {
+    this.history.record(update);
+    const removedRailTiles: number[] = [];
+    for (const event of update.updates[GameUpdateType.RailroadDestructionEvent])
+      for (const tile of this.rails.get(event.id)?.tiles ?? [])
+        removedRailTiles.push(tile);
+    for (const event of update.updates[GameUpdateType.RailroadSnapEvent])
+      for (const tile of this.rails.get(event.originalId)?.tiles ?? [])
+        removedRailTiles.push(tile);
+    this.corridors.record(update, removedRailTiles);
     if (update.packedMotionPlans) {
       for (const plan of unpackMotionPlans(update.packedMotionPlans)) {
         this.motionPlans.set(
@@ -207,6 +222,9 @@ export class ViewSnapshot {
     }
     const end = emptyView(tick);
     end.fog = projected.fog;
+    end.packedTradeCorridors = this.corridors.snapshot((t) =>
+      projection.fog.isVisible(t),
+    );
     end.updates[GameUpdateType.Win] = this.win;
     packets.push(
       encodeViewPacket({ kind: "update", snapshot: "end", update: end }),
@@ -393,6 +411,7 @@ export class ViewSnapshot {
     }
     const end = emptyView(tick);
     end.updates[GameUpdateType.Win] = this.win;
+    end.packedTradeCorridors = this.corridors.snapshot();
     packets.push(
       encodeViewPacket({ kind: "update", snapshot: "end", update: end }),
     );

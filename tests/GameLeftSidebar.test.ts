@@ -45,6 +45,10 @@ describe("GameLeftSidebar", () => {
       clanTag: () => null,
       numTilesOwned: () => 10,
       gold: () => 100n,
+      troops: () => 100,
+      units: () => [],
+      allies: () => [],
+      betrayals: () => 0,
       isAlive: () => true,
       isOnSameTeam: () => false,
       team: () => null,
@@ -60,6 +64,9 @@ describe("GameLeftSidebar", () => {
       numLandTiles: () => 100,
       numTilesWithFallout: () => 0,
       playerViews: () => [player],
+      players: () => [player],
+      ticksSinceStart: () => 10,
+      observeUpdates: () => () => {},
     } as unknown as GameView;
     const sidebar = new GameLeftSidebar();
     sidebar.game = game;

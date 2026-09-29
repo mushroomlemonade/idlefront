@@ -460,7 +460,9 @@ atlas-surface {
 }
 
 /* Recessed standings, matching the command bar's quiet instrument surface. */
-body.atlas-theme .atlas-leaderboard-flyout .stats-table {
+body.atlas-theme
+  :is(.atlas-leaderboard-flyout, .atlas-standings-surface)
+  .stats-table {
   color: #eee9d9;
   font-family: var(--war-font);
   margin-top: 0;
@@ -468,77 +470,117 @@ body.atlas-theme .atlas-leaderboard-flyout .stats-table {
   line-height: 1.25;
   -webkit-font-smoothing: antialiased;
 }
-body.atlas-theme .atlas-leaderboard-flyout .stats-table-content,
-body.atlas-theme .atlas-leaderboard-flyout .stats-table-scroll,
-body.atlas-theme .atlas-leaderboard-flyout .stats-table-row,
-body.atlas-theme .atlas-leaderboard-flyout .stats-table-header {
+body.atlas-theme
+  :is(.atlas-leaderboard-flyout, .atlas-standings-surface)
+  .stats-table-content,
+body.atlas-theme
+  :is(.atlas-leaderboard-flyout, .atlas-standings-surface)
+  .stats-table-scroll,
+body.atlas-theme
+  :is(.atlas-leaderboard-flyout, .atlas-standings-surface)
+  .stats-table-row,
+body.atlas-theme
+  :is(.atlas-leaderboard-flyout, .atlas-standings-surface)
+  .stats-table-header {
   gap: 0;
   align-content: start;
   grid-auto-rows: max-content;
 }
-body.atlas-theme .atlas-leaderboard-flyout .stats-table-row {
+body.atlas-theme
+  :is(.atlas-leaderboard-flyout, .atlas-standings-surface)
+  .stats-table-row {
   height: 30px;
   min-height: 30px;
 }
-body.atlas-theme .atlas-leaderboard-flyout .stats-table-row > div {
+body.atlas-theme
+  :is(.atlas-leaderboard-flyout, .atlas-standings-surface)
+  .stats-table-row
+  > div {
   height: 30px;
   min-height: 0;
   padding-inline: 6px;
   border-left: 0;
 }
-body.atlas-theme .atlas-leaderboard-flyout .stats-table-header > div {
+body.atlas-theme
+  :is(.atlas-leaderboard-flyout, .atlas-standings-surface)
+  .stats-table-header
+  > div {
   height: 32px;
   border-left: 0;
 }
-body.atlas-theme .atlas-leaderboard-flyout .stats-table-scroll {
+body.atlas-theme
+  :is(.atlas-leaderboard-flyout, .atlas-standings-surface)
+  .stats-table-scroll {
   max-height: 180px;
   overscroll-behavior: contain;
   scrollbar-width: none;
 }
 body.atlas-theme
-  .atlas-leaderboard-flyout
+  :is(.atlas-leaderboard-flyout, .atlas-standings-surface)
   .stats-table-scroll::-webkit-scrollbar {
   display: none;
 }
-body.atlas-theme .atlas-leaderboard-flyout .stats-table-well {
+body.atlas-theme
+  :is(.atlas-leaderboard-flyout, .atlas-standings-surface)
+  .stats-table-well {
   background: linear-gradient(#0005, #0001), var(--atlas-hud-surface);
   border: 0;
   border-radius: 5px;
   box-shadow: inset 0 1px 3px #0006;
 }
-body.atlas-theme .atlas-leaderboard-flyout .stats-table-header {
+body.atlas-theme
+  :is(.atlas-leaderboard-flyout, .atlas-standings-surface)
+  .stats-table-header {
   background: linear-gradient(#ffffff0c, #0003), var(--atlas-hud-surface);
   color: #ded7bd;
   text-shadow: 0 -1px 1px #000;
 }
-body.atlas-theme .atlas-leaderboard-flyout .stats-table-row > div,
-body.atlas-theme .atlas-leaderboard-flyout .stats-table-header > div {
+body.atlas-theme
+  :is(.atlas-leaderboard-flyout, .atlas-standings-surface)
+  .stats-table-row
+  > div,
+body.atlas-theme
+  :is(.atlas-leaderboard-flyout, .atlas-standings-surface)
+  .stats-table-header
+  > div {
   border-color: rgb(188 180 144 / 0.16);
 }
-body.atlas-theme .atlas-leaderboard-flyout .stats-table-row:nth-child(even) {
+body.atlas-theme
+  :is(.atlas-leaderboard-flyout, .atlas-standings-surface)
+  .stats-table-row:nth-child(even) {
   background: rgb(255 255 255 / 0.025);
 }
 body.atlas-theme
-  .atlas-leaderboard-flyout
+  :is(.atlas-leaderboard-flyout, .atlas-standings-surface)
   .stats-table-row.stats-table-emphasized,
 body.atlas-theme
-  .atlas-leaderboard-flyout
+  :is(.atlas-leaderboard-flyout, .atlas-standings-surface)
   .stats-table-row.stats-table-pinned-row {
   background: #283d35;
   color: #fff3cb;
   box-shadow: inset 2px 0 #bba971;
 }
-body.atlas-theme .atlas-leaderboard-flyout .stats-table-row:hover {
+body.atlas-theme
+  :is(.atlas-leaderboard-flyout, .atlas-standings-surface)
+  .stats-table-row:hover {
   background: #34443d;
 }
-body.atlas-theme .atlas-leaderboard-flyout .stats-table-header button {
+body.atlas-theme
+  :is(.atlas-leaderboard-flyout, .atlas-standings-surface)
+  .stats-table-header
+  button {
   color: inherit;
   min-height: 24px;
 }
-body.atlas-theme .atlas-leaderboard-flyout [aria-sort] span.text-sky-300 {
+body.atlas-theme
+  :is(.atlas-leaderboard-flyout, .atlas-standings-surface)
+  [aria-sort]
+  span.text-sky-300 {
   color: #e2c783;
 }
-body.atlas-theme .atlas-leaderboard-flyout button:focus-visible {
+body.atlas-theme
+  :is(.atlas-leaderboard-flyout, .atlas-standings-surface)
+  button:focus-visible {
   outline: 2px solid #dbc787;
   outline-offset: -2px;
 }

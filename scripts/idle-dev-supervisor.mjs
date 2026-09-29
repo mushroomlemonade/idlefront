@@ -58,6 +58,12 @@ export function componentSpec(name, config) {
           GAME_ENV: "dev",
           NUM_WORKERS: "2",
           IDLE_DISABLE_PUBLIC_LOBBIES: "1",
+          // Local opt-in only; the bridge applies it to NEW longplay worlds.
+          IDLE_LONGPLAY_STRESS_BOTS: [3000, 16000].includes(
+            config.LongplayStressBots,
+          )
+            ? String(config.LongplayStressBots)
+            : "0",
           TURNSTILE_SITE_KEY: "1x00000000000000000000AA",
           API_KEY: "WARNING_DEV_API_KEY_DO_NOT_USE_IN_PRODUCTION",
           ADMIN_BOT_API_KEY:

@@ -1,3 +1,4 @@
+import { stateWithOwner } from "../../../core/game/OwnerIdCodec";
 /**
  * TrailManager — per-tile "last owner" stamp for trail rendering.
  *
@@ -106,7 +107,11 @@ export class TrailManager {
       const isNuke = SMOOTHED_NUKE_TYPES.has(unit.unitType);
       let trail = this.unitTrails.get(id);
       if (!trail) {
-        const value = unit.ownerID | (isNuke ? NUKE_TRAIL_BIT : 0);
+        const value = stateWithOwner(
+          isNuke ? NUKE_TRAIL_BIT : 0,
+          unit.ownerID,
+          true,
+        );
         trail = { value, tiles: new Set(), lastPosStamped: -1 };
         this.unitTrails.set(id, trail);
       }

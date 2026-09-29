@@ -5,6 +5,20 @@ import { TileNodeIndex } from "./TileNodeIndex";
  * hash tables; typed heap entries avoid allocating tuples on every push. The
  * comparison operators and neighbor order match the original repair exactly. */
 export class WaterRepairSearch {
+  private readonly reachabilityIndex = new TileNodeIndex();
+  private readonly reachabilityQueue = new Uint32Array(8192);
+  private readonly isolated: {
+    destinations: Set<TileRef>;
+    boundary: Set<TileRef>;
+  }[] = [];
+  private isolatedRevision = "";
+  readonly metrics = {
+    searches: 0,
+    expanded: 0,
+    reachabilityVisited: 0,
+    rejected: 0,
+    connectivityHits: 0,
+  };
   private index = new TileNodeIndex();
   private count = 0;
   private tiles = new Uint32Array(2048);
@@ -21,7 +35,121 @@ export class WaterRepairSearch {
       GameMap,
       "isWater" | "neighbors4" | "manhattanDist" | "x" | "y"
     >,
+    private readonly rejectDisconnected = true,
+    private readonly terrainRevision?: () => string,
   ) {}
+
+  /** Only exhausted GLOBAL components qualify. Search budgets and corridor
+   * failures are not evidence that another request is impossible. */
+  provenDisconnected(starts: readonly TileRef[], to: TileRef): boolean {
+    if (!this.terrainRevision || starts.length === 0) return false;
+    const revision = this.terrainRevision();
+    if (revision !== this.isolatedRevision) {
+      this.isolated.length = 0;
+      this.isolatedRevision = revision;
+    }
+    const blocked = starts.every((from) =>
+      this.isolated.some(
+        (entry) =>
+          (entry.destinations.has(to) && !entry.boundary.has(from)) ||
+          (entry.destinations.has(from) && !entry.boundary.has(to)),
+      ),
+    );
+    if (blocked) this.metrics.connectivityHits++;
+    return blocked;
+  }
+
+  private rememberExhaustedSource(starts: readonly TileRef[]): void {
+    if (
+      !this.terrainRevision ||
+      starts.length !== 1 ||
+      !this.map.isWater(starts[0]) ||
+      this.count > 8192
+    )
+      return;
+    const destinations = new Set<TileRef>();
+    const boundary = new Set<TileRef>();
+    for (let i = 0; i < this.count; i++) {
+      const tile = this.tiles[i];
+      destinations.add(tile);
+      boundary.add(tile);
+      const count = this.map.neighbors4(tile, this.neighbors);
+      for (let j = 0; j < count; j++) {
+        const next = this.neighbors[j];
+        boundary.add(next);
+        // A wet edge outside the explored area means corridor-limited, NOT
+        // globally disconnected. Dry endpoints stay in the boundary exception.
+        if (this.map.isWater(next) && this.index.get(next) === undefined)
+          return;
+      }
+    }
+    this.isolated.push({ destinations, boundary });
+    if (this.isolated.length > 8) this.isolated.shift();
+  }
+
+  /** Run once, only after a repair has already expanded 4,096 nodes.
+   * Prove only small disconnected destination components. Exhausting the
+   * budget means UNKNOWN, never unreachable. Starting tiles may lie outside
+   * the corridor (the authoritative forward search seeds them unconditionally).
+   * Meeting the forward frontier also means UNKNOWN. No successful route,
+   * tie order, random state or expansion limit changes. Scratch is bounded
+   * independently of world size and is reused between searches.
+   */
+  private disconnected(
+    starts: readonly TileRef[],
+    to: TileRef,
+    corridor: ReadonlySet<number>,
+    blocksWide: number,
+  ): boolean {
+    if (starts.length === 0) return true;
+    const sources = new Set(starts);
+    if (sources.has(to)) return false;
+    this.reachabilityIndex.clear();
+    this.reachabilityIndex.set(to, 0);
+    this.reachabilityQueue[0] = to;
+    let head = 0,
+      tail = 1;
+    let completeComponent = true;
+    const boundary = this.terrainRevision ? new Set<TileRef>([to]) : undefined;
+    while (head < tail) {
+      const tile = this.reachabilityQueue[head++];
+      this.metrics.reachabilityVisited++;
+      const forwardNode = this.index.get(tile);
+      if (forwardNode !== undefined && this.closed[forwardNode]) return false;
+      const count = this.map.neighbors4(tile, this.neighbors);
+      for (let i = 0; i < count; i++) {
+        const next = this.neighbors[i];
+        boundary?.add(next);
+        if (sources.has(next)) return false;
+        if (
+          this.reachabilityIndex.get(next) !== undefined ||
+          !this.map.isWater(next)
+        )
+          continue;
+        const block =
+          Math.floor(this.map.y(next) / 16) * blocksWide +
+          Math.floor(this.map.x(next) / 16);
+        if (!corridor.has(block)) {
+          completeComponent = false;
+          continue;
+        }
+        if (tail === this.reachabilityQueue.length) return false;
+        this.reachabilityIndex.set(next, tail);
+        this.reachabilityQueue[tail++] = next;
+      }
+    }
+    // Only cache a GLOBAL connectivity proof, never a corridor-limited one.
+    // Include dry boundary tiles because a route may start on a dry endpoint.
+    // Eight bounded components; conversions invalidate even before graph rebuild.
+    if (completeComponent && boundary) {
+      this.isolated.push({
+        destinations: new Set(this.reachabilityQueue.subarray(0, tail)),
+        boundary,
+      });
+      if (this.isolated.length > 8) this.isolated.shift();
+    }
+    return true;
+  }
 
   private node(tile: TileRef): number {
     const existing = this.index.get(tile);
@@ -102,6 +230,8 @@ export class WaterRepairSearch {
     corridor: ReadonlySet<number>,
     blocksWide: number,
   ): TileRef[] | null {
+    this.metrics.searches++;
+    if (this.provenDisconnected(starts, to)) return null;
     this.index.clear();
     this.count = 0;
     this.heapSize = 0;
@@ -139,6 +269,15 @@ export class WaterRepairSearch {
       }
       this.closed[node] = 1;
       closedCount++;
+      this.metrics.expanded++;
+      if (
+        closedCount === 4096 &&
+        this.rejectDisconnected &&
+        this.disconnected(starts, to, corridor, blocksWide)
+      ) {
+        this.metrics.rejected++;
+        return null;
+      }
       const count = this.map.neighbors4(tile, this.neighbors);
       const nextCost = this.costs[node] + 1;
       for (let i = 0; i < count; i++) {
@@ -158,6 +297,7 @@ export class WaterRepairSearch {
         this.push(nextNode, nextCost + this.map.manhattanDist(next, to));
       }
     }
+    if (this.heapSize === 0) this.rememberExhaustedSource(starts);
     return null;
   }
 }

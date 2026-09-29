@@ -26,7 +26,11 @@ function classifyOwner(
     ownerID > 0 &&
     ownerID < relationSize &&
     localPlayerID < relationSize &&
-    relationMatrix[localPlayerID * relationSize + ownerID] === RELATION_FRIENDLY
+    relationMatrix[
+      relationMatrix.length === relationSize
+        ? ownerID
+        : localPlayerID * relationSize + ownerID
+    ] === RELATION_FRIENDLY
   ) {
     return TELEGRAPH_FRIENDLY;
   }

@@ -176,6 +176,12 @@ export class RemoteWorkerClient extends WorkerClient {
   override playerProfile(playerID: number): Promise<PlayerProfile> {
     return this.ask({ type: "player_profile", playerID });
   }
+  override worldHistory(
+    metric: import("../core/WorldHistory").HistoryMetric,
+    ascending: boolean,
+  ): Promise<import("../core/WorldHistory").WorldHistoryResponse> {
+    return this.ask({ type: "world_history", playerID: 0, metric, ascending });
+  }
   override playerBorderTiles(playerID: PlayerID): Promise<PlayerBorderTiles> {
     return this.ask({ type: "player_border_tiles", playerID });
   }

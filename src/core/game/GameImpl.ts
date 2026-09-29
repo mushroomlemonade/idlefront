@@ -43,6 +43,7 @@ import { GameMap, TileRef } from "./GameMap";
 import { GameUpdate, GameUpdateType } from "./GameUpdates";
 import { MotionPlanRecord, packMotionPlans } from "./MotionPlans";
 import { OrderedContactIndex } from "./OrderedContactIndex";
+import { packTileState } from "./OwnerIdCodec";
 import { PlayerImpl } from "./PlayerImpl";
 import { RailNetwork } from "./RailNetwork";
 import { createRailNetwork } from "./RailNetworkImpl";
@@ -51,6 +52,7 @@ import { StatsImpl } from "./StatsImpl";
 import { assignTeams } from "./TeamAssignment";
 import { TerraNulliusImpl } from "./TerraNulliusImpl";
 import { UnitGrid, UnitPredicate } from "./UnitGrid";
+import { UnitTypeOwners } from "./UnitTypeOwners";
 import { WaterManager } from "./WaterManager";
 
 export function createGame(
@@ -108,6 +110,7 @@ export class GameImpl implements Game {
   private motionPlanRecords: MotionPlanRecord[] = [];
   private planDrivenUnitIds = new Set<number>();
   private unitGrid: UnitGrid;
+  readonly unitTypeOwners = new UnitTypeOwners();
   private _unitMap = new Map<number, Unit>();
   // Sum of live unit levels, maintained at lifecycle boundaries. Ports query
   // fleet population repeatedly; walking every player's fleet here is quadratic.
@@ -346,7 +349,7 @@ export class GameImpl implements Game {
     // would churn the heap (player.units() reuses its array until removal).
     const out: Unit[] = [];
     if (first !== undefined && !Array.isArray(first) && second === undefined) {
-      for (const p of this._players.values())
+      for (const p of this.unitTypeOwners.get(first as UnitType))
         p.appendUnitsOfType(first as UnitType, out);
       return out;
     }
@@ -561,8 +564,7 @@ export class GameImpl implements Game {
     // Low 16 bits: tile state, bits 16-23: terrain byte
     this.tileUpdatePairs.push(
       tile,
-      (this._map.tileState(tile) & 0xffff) |
-        (this._map.terrainByte(tile) << 16),
+      packTileState(this._map.tileState(tile), this._map.terrainByte(tile)),
     );
   }
 
@@ -1364,7 +1366,7 @@ export class GameImpl implements Game {
   tileState(tile: TileRef): number {
     return this._map.tileState(tile);
   }
-  tileStateBuffer(): Uint16Array {
+  tileStateBuffer(): Uint16Array | Uint32Array {
     return this._map.tileStateBuffer();
   }
 

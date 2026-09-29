@@ -76,7 +76,7 @@ export function linearSimulationMap(
   const tiles = map.width() * map.height();
   if (
     !(map instanceof PagedGameMap) ||
-    tiles * 3 > maxBytes ||
+    tiles * (map.ownerIdBits === 16 ? 5 : 3) > maxBytes ||
     map.hasAllocatedState()
   )
     return map;
@@ -95,5 +95,7 @@ export function linearSimulationMap(
     map.height(),
     terrain,
     map.numLandTiles(),
+    undefined,
+    map.ownerIdBits === 16,
   );
 }

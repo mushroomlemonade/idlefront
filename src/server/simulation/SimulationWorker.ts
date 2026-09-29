@@ -1,4 +1,5 @@
 import { parentPort, workerData } from "node:worker_threads";
+import { UnitType } from "../../core/game/Game";
 import {
   GameUpdateType,
   type GameUpdateViewData,
@@ -9,6 +10,7 @@ import {
   encodeViewPacket,
   type ViewQuery,
 } from "../../core/network/ViewProtocol";
+import { waterRouteDiagnostics } from "../../core/pathfinding/PathFinder";
 import type { GameStartInfo, Turn } from "../../core/Schemas";
 import type { WorkerMessage } from "../../core/worker/WorkerMessages";
 import { BotActivity } from "./BotActivity";
@@ -88,13 +90,30 @@ for (let index = 0; index < recoveryTurns.length; index++) {
   reportRecoveryProgress(index + 1, index + 1 === recoveryTurns.length);
 }
 
-function query(q: ViewQuery): WorkerMessage {
+function query(q: ViewQuery, viewerClientID?: string): WorkerMessage {
   const game = runner.game;
   if (q.x !== undefined && q.y !== undefined && !game.isValidCoord(q.x, q.y))
     throw new Error("Invalid map position");
   if (q.targetTile !== undefined && !game.isValidRef(q.targetTile))
     throw new Error("Invalid target tile");
   switch (q.type) {
+    case "world_history": {
+      const viewer = viewerClientID
+        ? game.playerByClientID(viewerClientID)
+        : undefined;
+      const restricted =
+        !!fog && (!viewerClientID || !fog.forClient(viewerClientID).global);
+      return {
+        type: "world_history_result",
+        id: q.id,
+        result: snapshot.history.query(
+          q.metric ?? "tiles",
+          q.ascending ?? false,
+          viewer?.id(),
+          restricted,
+        ),
+      };
+    }
     case "player_actions":
       return {
         type: "player_actions_result",
@@ -165,6 +184,8 @@ async function handleCommand(command: any) {
       // below real time. Non-plan-driven movement (for example warships) and
       // all lifecycle/state changes continue through the ordinary Unit stream.
       latest.pendingTurns = 0;
+      if (latest.tick % 300 === 0)
+        latest.packedTradeCorridors = snapshot.corridors.snapshot();
       latest.serverTickExecutionDuration = performance.now() - started;
       const encodingStarted = performance.now();
       const bytes = fog
@@ -181,7 +202,16 @@ async function handleCommand(command: any) {
               : {
                   clientID,
                   bytes: new Uint8Array(0),
-                  packets: encodeFogUpdate(projection.project(latest)),
+                  packets: encodeFogUpdate({
+                    ...projection.project(latest),
+                    ...(latest.packedTradeCorridors !== undefined
+                      ? {
+                          packedTradeCorridors: snapshot.corridors.snapshot(
+                            (t) => projection.fog.isVisible(t),
+                          ),
+                        }
+                      : {}),
+                  }),
                 },
           )
         : undefined;
@@ -208,6 +238,17 @@ async function handleCommand(command: any) {
                 }),
             }
           : undefined;
+      const entityCounts =
+        latest.tick % 100 === 0
+          ? {
+              warships: runner.game.units(UnitType.Warship).length,
+              tradeShips: runner.game.units(UnitType.TradeShip).length,
+              transports: runner.game.units(UnitType.TransportShip).length,
+              sams: runner.game.units(UnitType.SAMLauncher).length,
+            }
+          : undefined;
+      const workerMemory =
+        latest.tick % 100 === 0 ? process.memoryUsage() : undefined;
       port.postMessage(
         {
           id: command.id,
@@ -219,10 +260,17 @@ async function handleCommand(command: any) {
           encodingDuration,
           navigationPreparationMs,
           navigationMetrics:
-            latest.tick % 100 === 0 ? navigation.metrics : undefined,
+            latest.tick % 100 === 0
+              ? {
+                  ...navigation.metrics,
+                  synchronous: waterRouteDiagnostics(runner.game),
+                }
+              : undefined,
           tileDeltaCount: latest.packedTileUpdates.length / 2,
           motionPlanBytes: latest.packedMotionPlans?.byteLength ?? 0,
           unitUpdateCount: latest.updates[GameUpdateType.Unit].length,
+          entityCounts,
+          workerMemory,
           stats,
           win: latest.updates[GameUpdateType.Win][0],
         },
@@ -263,9 +311,9 @@ async function handleCommand(command: any) {
           ? projectViewQueryResult(
               runner.game,
               fog.forClient(command.viewerClientID),
-              query(command.query),
+              query(command.query, command.viewerClientID),
             )
-          : query(command.query),
+          : query(command.query, command.viewerClientID),
       });
       port.postMessage({ id: command.id, bytes }, [bytes.buffer]);
     } else if (command.type === "forget_viewer") {

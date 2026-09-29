@@ -101,6 +101,7 @@ export async function loadTerrainMap(
    * (and legacy local worker) retain the exact same simulation data.
    */
   loadSimulationMiniMap: boolean = true,
+  wideOwners: boolean = false,
 ): Promise<TerrainMapData> {
   // GameMap contains mutable ownership/fallout state. Reusing it across games
   // also reused the previous world's territory (and made parallel views alias
@@ -119,10 +120,19 @@ export async function loadTerrainMap(
               terrain: await mapFiles.mapPageBin(page.path),
             })),
           ),
+          wideOwners,
         )
       : mapSize === GameMapSize.Normal
-        ? await genTerrainFromBin(manifest.map, await mapFiles.mapBin())
-        : await genTerrainFromBin(manifest.map4x, await mapFiles.map4xBin());
+        ? await genTerrainFromBin(
+            manifest.map,
+            await mapFiles.mapBin(),
+            wideOwners,
+          )
+        : await genTerrainFromBin(
+            manifest.map4x,
+            await mapFiles.map4xBin(),
+            wideOwners,
+          );
 
   const miniMap = loadSimulationMiniMap
     ? mapSize === GameMapSize.Normal
@@ -264,6 +274,7 @@ export async function loadLayerImages(
 export async function genTerrainFromBin(
   mapData: MapMetadata,
   data: Uint8Array,
+  wideOwners = false,
 ): Promise<GameMap> {
   if (data.length !== mapData.width * mapData.height) {
     throw new Error(
@@ -276,12 +287,15 @@ export async function genTerrainFromBin(
     mapData.height,
     data,
     mapData.num_land_tiles,
+    undefined,
+    wideOwners,
   );
 }
 
 export async function genTerrainFromPages(
   metadata: PagedMapMetadata,
   pages: readonly (MapPageMetadata & { terrain: Uint8Array })[],
+  wideOwners = false,
 ): Promise<GameMap> {
   if (metadata.pages_wide !== Math.ceil(metadata.width / metadata.page_size)) {
     throw new Error("Paged map pages_wide does not match its dimensions");
@@ -311,5 +325,6 @@ export async function genTerrainFromPages(
     metadata.page_size,
     terrainPages,
     metadata.num_land_tiles,
+    wideOwners,
   );
 }

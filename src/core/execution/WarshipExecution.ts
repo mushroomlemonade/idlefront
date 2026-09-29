@@ -14,6 +14,7 @@ import { PseudoRandom } from "../PseudoRandom";
 import { findMinimumBy } from "../Util";
 import { routeDiagnostic } from "../utilities/RateLimitedDiagnostic";
 import { ShellExecution } from "./ShellExecution";
+import { warshipPatrolRetry } from "./WarshipPatrolRetry";
 
 export class WarshipExecution implements Execution {
   private random: PseudoRandom;
@@ -37,7 +38,7 @@ export class WarshipExecution implements Execution {
 
   init(mg: Game, ticks: number): void {
     this.mg = mg;
-    this.pathfinder = new WaterPathFinder(mg);
+    this.pathfinder = new WaterPathFinder(mg, 0, "warship");
     this.random = new PseudoRandom(mg.ticks());
     if (
       this.automation &&
@@ -447,7 +448,12 @@ export class WarshipExecution implements Execution {
     }
 
     this.warship.setTargetTile(retreatPortTile);
-    const result = this.pathfinder.next(this.warship.tile(), retreatPortTile);
+    const result = this.pathfinder.next(
+      this.warship.tile(),
+      retreatPortTile,
+      undefined,
+      true,
+    );
     switch (result.status) {
       case PathStatus.COMPLETE:
         this.warship.move(result.node);
@@ -696,7 +702,12 @@ export class WarshipExecution implements Execution {
         }
       }
 
-      const result = this.pathfinder.next(this.warship.tile(), targetTile, 5);
+      const result = this.pathfinder.next(
+        this.warship.tile(),
+        targetTile,
+        5,
+        true,
+      );
       switch (result.status) {
         case PathStatus.COMPLETE:
           this.warship.owner().captureUnit(target);
@@ -730,9 +741,21 @@ export class WarshipExecution implements Execution {
   }
 
   private patrol() {
+    const retry =
+      this.mg.config().gameConfig().warshipPatrolScheduling === "v1"
+        ? warshipPatrolRetry(this.warship)
+        : undefined;
+    const ready =
+      !retry ||
+      retry.ready(
+        this.mg.ticks(),
+        `${this.warship.tile()}:${this.warship.owner().id()}:${this.warship.warshipState().patrolTile}:${this.mg.waterGraphVersion()}`,
+      );
+    if (!ready && this.warship.targetTile() === undefined) return;
     if (this.warship.targetTile() === undefined) {
       this.warship.setTargetTile(this.randomTile());
       if (this.warship.targetTile() === undefined) {
+        retry?.failed(this.mg.ticks(), this.warship.id());
         return;
       }
     }
@@ -743,15 +766,18 @@ export class WarshipExecution implements Execution {
     );
     switch (result.status) {
       case PathStatus.COMPLETE:
+        retry?.reset();
         this.warship.setTargetTile(undefined);
         this.warship.move(result.node);
         break;
       case PathStatus.NEXT:
+        retry?.reset();
         this.warship.move(result.node);
         break;
       case PathStatus.NOT_FOUND: {
         routeDiagnostic("path not found to target");
         this.warship.setTargetTile(undefined);
+        retry?.failed(this.mg.ticks(), this.warship.id());
         break;
       }
     }
@@ -770,6 +796,9 @@ export class WarshipExecution implements Execution {
   }
 
   randomTile(allowShoreline: boolean = false): TileRef | undefined {
+    if (this.mg.config().gameConfig().warshipPatrolScheduling === "v1") {
+      return this.boundedRandomTile(allowShoreline);
+    }
     let warshipPatrolRange = this.mg.config().warshipPatrolRange();
     const maxAttemptBeforeExpand: number = 500;
     let attempts: number = 0;
@@ -828,13 +857,39 @@ export class WarshipExecution implements Execution {
       }
       return tile;
     }
-    console.warn(
-      `Failed to find random tile for warship for ${this.warship.owner().name()}`,
-    );
+    routeDiagnostic("Failed to find random warship patrol tile");
     if (!allowShoreline) {
       // If we failed to find a tile on the ocean, try again but allow shoreline
       return this.randomTile(true);
     }
+    return undefined;
+  }
+
+  private boundedRandomTile(allowShoreline: boolean): TileRef | undefined {
+    const patrol = this.warship.warshipState().patrolTile;
+    if (patrol === undefined || !this.mg.isValidRef(patrol)) return undefined;
+    const component = this.mg.getWaterComponent(this.warship.tile());
+    for (let shore = allowShoreline ? 1 : 0; shore < 2; shore++) {
+      let range = this.mg.config().warshipPatrolRange();
+      for (let phase = 0; phase < 3; phase++) {
+        // Includes off-map samples: corners and tiny ponds must also terminate.
+        for (let attempt = 0; attempt < 64; attempt++) {
+          const x =
+            this.mg.x(patrol) + this.random.nextInt(-range / 2, range / 2);
+          const y =
+            this.mg.y(patrol) + this.random.nextInt(-range / 2, range / 2);
+          if (!this.mg.isValidCoord(x, y)) continue;
+          const tile = this.mg.ref(x, y);
+          if (!this.mg.isWater(tile) || (!shore && this.mg.isShoreline(tile)))
+            continue;
+          if (component !== null && !this.mg.hasWaterComponent(tile, component))
+            continue;
+          return tile;
+        }
+        range += Math.floor(range / 2);
+      }
+    }
+    routeDiagnostic("Failed to find random warship patrol tile");
     return undefined;
   }
 }

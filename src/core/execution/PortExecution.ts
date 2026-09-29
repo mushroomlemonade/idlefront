@@ -1,5 +1,7 @@
 import { Execution, Game, Unit, UnitType } from "../game/Game";
+import { tradePortCandidates } from "../game/PortTradeIndex";
 import { PseudoRandom } from "../PseudoRandom";
+import { tradeRouteAcceptance, tradeSpawnRate } from "../TradeCorridors";
 import { TradeShipExecution } from "./TradeShipExecution";
 import { TrainStationExecution } from "./TrainStationExecution";
 
@@ -55,6 +57,13 @@ export class PortExecution implements Execution {
     }
 
     const port = this.random.randElement(ports);
+    const acceptance = tradeRouteAcceptance(
+      this.mg,
+      this.mg.config().gameConfig().tradeCorridors,
+      `sea:${this.port.id()}:${port.id()}`,
+      this.mg.ticks(),
+    );
+    if (acceptance < 1 && this.random.next() >= acceptance) return;
     this.mg.addExecution(
       new TradeShipExecution(this.port.owner(), this.port, port),
     );
@@ -72,9 +81,23 @@ export class PortExecution implements Execution {
     const numTradeShips = this.mg.unitCount(UnitType.TradeShip);
     const spawnRate = this.mg
       .config()
-      .tradeShipSpawnRate(this.tradeShipSpawnRejections, numTradeShips);
+      .tradeShipSpawnRate(
+        this.tradeShipSpawnRejections,
+        numTradeShips,
+        this.mg.width() * this.mg.height(),
+      );
+    const pacedRate = Math.max(
+      1,
+      Math.ceil(
+        spawnRate /
+          tradeSpawnRate(
+            this.mg.config().gameConfig().tradeCorridors,
+            this.mg.ticks(),
+          ),
+      ),
+    );
     for (let i = 0; i < this.port!.level(); i++) {
-      if (this.random.chance(spawnRate)) {
+      if (this.random.chance(pacedRate)) {
         this.tradeShipSpawnRejections = 0;
         return true;
       }
@@ -103,10 +126,7 @@ export class PortExecution implements Execution {
       const comp = this.mg.getWaterComponent(neighbor);
       if (comp !== null) sourceComponents.add(comp);
     }
-    const ports = this.mg
-      .players()
-      .filter((p) => p !== this.port!.owner() && p.canTrade(this.port!.owner()))
-      .flatMap((p) => p.units(UnitType.Port))
+    const ports = tradePortCandidates(this.mg, this.port!.owner())
       .filter((p) => {
         for (const comp of sourceComponents) {
           if (this.mg.hasWaterComponent(p.tile(), comp)) return true;

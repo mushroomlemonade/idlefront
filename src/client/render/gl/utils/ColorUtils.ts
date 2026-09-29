@@ -11,7 +11,22 @@
 import renderDefaults from "../render-settings.json";
 
 /** Must cover 12-bit smallID range (0-4095). */
-const PALETTE_SIZE = 4096;
+let PALETTE_SIZE = 4096;
+
+/** A game owns one renderer; reset explicitly when entering each game. */
+export function configureOwnerCapacity(wide: boolean): void {
+  PALETTE_SIZE = wide ? 65536 : 4096;
+}
+
+export function ownerPaletteShape(rows: number): {
+  width: number;
+  height: number;
+} {
+  const width = rows > 16 ? 512 : 256;
+  return PALETTE_SIZE === 4096
+    ? { width: PALETTE_SIZE, height: rows }
+    : { width, height: (PALETTE_SIZE / width) * rows };
+}
 
 export function getPaletteSize(): number {
   return PALETTE_SIZE;

@@ -18,7 +18,7 @@ export class PlayerStats extends StatsTable {
     const myPlayer = game.myPlayer();
 
     return game
-      .playerViews()
+      .players()
       .filter((player) => player.isAlive())
       .map((player) => ({
         key: player.id(),

@@ -20,6 +20,9 @@ export type PathResult<T> =
  */
 export interface PathFinder<T> {
   findPath(from: T | T[], to: T): T[] | null;
+  /** Optional immutable shared geometry. Consumers own their cursor, never
+   * mutate this buffer. Legacy findPath remains a caller-owned array. */
+  findSharedPath?(from: T | T[], to: T): Readonly<ArrayLike<T>> | null;
 }
 
 /**

@@ -30,15 +30,18 @@ import type {
   RendererConfig,
   UnitState,
 } from "../types";
+import { PagedRenderer } from "./PagedRenderer";
 import type { SpawnCenter } from "./passes/SpawnOverlayPass";
 import type { AttackTroopLabel } from "./passes/WorldTextPass";
 import { GPURenderer } from "./Renderer";
-import { PagedRenderer } from "./PagedRenderer";
 import type { RenderSettings } from "./RenderSettings";
 
 export class MapRenderer {
   private fogEnabled = false;
-  setFog(enabled: boolean): void { this.fogEnabled = enabled; this.renderer?.setFog(enabled); }
+  setFog(enabled: boolean): void {
+    this.fogEnabled = enabled;
+    this.renderer?.setFog(enabled);
+  }
   private renderer: GPURenderer | PagedRenderer | null = null;
   private resizeObs: ResizeObserver | null = null;
   // Stored layer data for context-restore re-creation.
@@ -161,7 +164,7 @@ export class MapRenderer {
   // ---- Data upload ----
 
   uploadLiveDelta(
-    tileState: Uint16Array,
+    tileState: Uint16Array | Uint32Array,
     changedTiles: readonly number[],
   ): void {
     this.renderer?.uploadLiveDelta(tileState, changedTiles);
@@ -179,7 +182,7 @@ export class MapRenderer {
   }
   /** Upload full tile + trail state without resetting bloom (for live play). */
   uploadTileAndTrailState(
-    tileState: Uint16Array,
+    tileState: Uint16Array | Uint32Array,
     trailState: Uint16Array,
     trailSparseState?: ReadonlyMap<number, number> | null,
   ): void {
@@ -214,6 +217,9 @@ export class MapRenderer {
   }
   setPlayerSpawn(smallID: number, x: number, y: number): void {
     this.renderer?.setPlayerSpawn(smallID, x, y);
+  }
+  updateTradeCorridors(data: Float32Array): void {
+    this.renderer?.updateTradeCorridors(data);
   }
   uploadRailroadState(
     data: Uint8Array,

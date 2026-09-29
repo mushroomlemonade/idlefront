@@ -11,6 +11,10 @@ import { themeProvider } from "../../theme/ThemeProvider";
 import { getTranslatedPlayerTeamLabel, translateText } from "../../Utils";
 import type { GameView } from "../../view";
 import { ImmunityBarVisibleEvent } from "./ImmunityTimer";
+import "./LeaderboardDashboard";
+import type { LeaderboardDashboard } from "./LeaderboardDashboard";
+import { LeaderboardHistory } from "./lib/LeaderboardHistory";
+import { LeaderboardHistoryStore } from "./lib/LeaderboardHistoryStore";
 import "./PlayerStats";
 import type { PlayerStats } from "./PlayerStats";
 import { SpawnBarVisibleEvent } from "./SpawnTimer";
@@ -37,6 +41,33 @@ export class GameLeftSidebar extends LitElement implements Controller {
   private immunityBarVisible = false;
   @state()
   private leaderboardRank: number | null = null;
+  @state() private dashboardOpen = false;
+  private history = new LeaderboardHistory();
+  private historyGame: GameView | null = null;
+  private stopHistory?: () => void;
+  private historyStore = new LeaderboardHistoryStore();
+  private historyKey = "";
+  private lastHistorySave = 0;
+  private persistHistory = () => {
+    if (this.game?.config().gameConfig().serverSimulation) return;
+    if (this.historyKey)
+      void this.historyStore.save(this.historyKey, this.history.snapshot());
+  };
+  connectedCallback() {
+    super.connectedCallback();
+    document.addEventListener("visibilitychange", this.persistHistory);
+    window.addEventListener("pagehide", this.persistHistory);
+  }
+  @query("leaderboard-dashboard") private dashboard?: LeaderboardDashboard;
+
+  disconnectedCallback() {
+    this.persistHistory();
+    document.removeEventListener("visibilitychange", this.persistHistory);
+    window.removeEventListener("pagehide", this.persistHistory);
+    super.disconnectedCallback();
+    this.stopHistory?.();
+    this.historyGame = null;
+  }
 
   private playerColor: Colord = new Colord("#FFFFFF");
   @property({ attribute: false }) public game: GameView | null = null;
@@ -68,6 +99,30 @@ export class GameLeftSidebar extends LitElement implements Controller {
 
   tick() {
     if (this.game === null) return;
+    const key = `${this.game.gameID()}:${this.game.myPlayer()?.id() ?? "spectator"}:${this.game.config().gameConfig().fogOfWar ?? "public"}`;
+    if (this.historyGame !== this.game || key !== this.historyKey) {
+      this.persistHistory();
+      this.stopHistory?.();
+      this.history = new LeaderboardHistory();
+      this.historyKey = key;
+      const history = this.history;
+      if (!this.game.config().gameConfig().serverSimulation)
+        void this.historyStore.load(key).then((saved) => {
+          if (saved && this.history === history) {
+            history.restore(saved);
+            this.dashboard?.refresh();
+          }
+        });
+      this.historyGame = this.game;
+      this.stopHistory = this.game.observeUpdates((update) =>
+        this.history.observe(this.game!, update),
+      );
+    }
+    if (Date.now() - this.lastHistorySave > 30000) {
+      this.lastHistorySave = Date.now();
+      this.persistHistory();
+    }
+    this.dashboard?.refresh();
 
     const team = this.game.myPlayer()?.team();
     if (this.playerTeam === null && team !== null && team !== undefined) {
@@ -193,7 +248,21 @@ export class GameLeftSidebar extends LitElement implements Controller {
         <div
           class="atlas-leaderboard-flyout flex flex-col gap-2 min-w-0 w-full"
         >
+          ${
+            this.isPlayerStatsShown
+              ? html`<button
+                  class="atlas-leaderboard-expand"
+                  type="button"
+                  @click=${() => {
+                    this.dashboardOpen = true;
+                  }}
+                >
+                  fullscreen & charts
+                </button>`
+              : null
+          }
           <player-stats
+            .compact=${true}
             @leaderboard-rank=${(
               event: CustomEvent<{ rank: number | null }>,
             ) => {
@@ -216,6 +285,14 @@ export class GameLeftSidebar extends LitElement implements Controller {
         </div>
         <slot></slot>
       </aside>
+      <leaderboard-dashboard
+        .game=${this.game}
+        .history=${this.history}
+        .open=${this.dashboardOpen}
+        @dashboard-close=${() => {
+          this.dashboardOpen = false;
+        }}
+      ></leaderboard-dashboard>
     `;
   }
 }

@@ -10,6 +10,7 @@ import {
 } from "../src/core/game/Game";
 import { TileRef } from "../src/core/game/GameMap";
 import { PathStatus } from "../src/core/pathfinding/types";
+import { tradeCorridorsForPreset } from "../src/core/TradeCorridors";
 import { setup } from "./util/Setup";
 import { executeTicks } from "./util/utils";
 
@@ -18,11 +19,18 @@ let game: Game;
 let player1: Player;
 let player2: Player;
 
-describe("Warship", () => {
+describe.each([false, true, "corridors"])("Warship v1=%s", (scheduled) => {
   beforeEach(async () => {
     game = await setup(
       "half_land_half_ocean",
-      { infiniteGold: true, instantBuild: true },
+      {
+        infiniteGold: true,
+        instantBuild: true,
+        ...(scheduled ? { warshipPatrolScheduling: "v1" as const } : {}),
+        ...(scheduled === "corridors"
+          ? { tradeCorridors: tradeCorridorsForPreset("longplay") }
+          : {}),
+      },
       [
         new PlayerInfo("boat dude", PlayerType.Human, null, "player_1_id"),
         new PlayerInfo("boat dude", PlayerType.Human, null, "player_2_id"),

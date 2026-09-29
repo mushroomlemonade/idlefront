@@ -196,6 +196,13 @@ export class WorkerClient {
     this.worker!.postMessage({ type: "set_fast_forward", enabled });
   }
 
+  worldHistory(
+    _metric: import("../WorldHistory").HistoryMetric,
+    _ascending: boolean,
+  ): Promise<import("../WorldHistory").WorldHistoryResponse | undefined> {
+    return Promise.resolve(undefined);
+  }
+
   playerProfile(playerID: number): Promise<PlayerProfile> {
     return new Promise((resolve, reject) => {
       if (!this.isInitialized) {

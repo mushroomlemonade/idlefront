@@ -22,13 +22,16 @@ export function playerTextureCapacity(
   botCount: number,
   humanCapacity: number | undefined,
   pagedMap: boolean,
+  wideOwners = false,
 ): number {
   const minimum = pagedMap ? MIN_PAGED_MAP_CAPACITY : MIN_FLAT_MAP_CAPACITY;
   const rosterSize =
-    nonNegativeInteger(botCount) + nonNegativeInteger(humanCapacity);
+    nonNegativeInteger(botCount) +
+    nonNegativeInteger(humanCapacity) +
+    (wideOwners ? 401 : 0);
 
   return Math.min(
-    MAX_OWNER_CAPACITY,
+    wideOwners ? 65536 : MAX_OWNER_CAPACITY,
     Math.max(minimum, nextPowerOfTwo(Math.max(1, rosterSize))),
   );
 }

@@ -41,7 +41,7 @@ describe("PlayerStats", () => {
     const me = player("me", 3);
     const game = {
       myPlayer: () => me,
-      playerViews: () => [me],
+      players: () => [me],
       config: () => ({ maxTroops: () => 100 }),
       numLandTiles: () => 100,
       numTilesWithFallout: () => 0,
@@ -77,7 +77,7 @@ describe("PlayerStats", () => {
     ];
     const game = {
       myPlayer: () => players[6],
-      playerViews: () => players,
+      players: () => players,
       config: () => ({ maxTroops: () => 100 }),
       numLandTiles: () => 100,
       numTilesWithFallout: () => 0,
@@ -133,7 +133,7 @@ describe("PlayerStats", () => {
     const me = player("me", 3);
     const game = {
       myPlayer: () => me,
-      playerViews: () => [me],
+      players: () => [me],
       config: () => ({ maxTroops: () => 100 }),
       numLandTiles: () => 100,
       numTilesWithFallout: () => 0,
@@ -191,7 +191,7 @@ describe("PlayerStats clan column", () => {
   async function mount(players: PlayerView[]): Promise<PlayerStats> {
     const game = {
       myPlayer: () => players[0],
-      playerViews: () => players,
+      players: () => players,
       config: () => ({ maxTroops: () => 100 }),
       numLandTiles: () => 100,
       numTilesWithFallout: () => 0,

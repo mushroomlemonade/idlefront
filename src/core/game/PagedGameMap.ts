@@ -1,5 +1,11 @@
 import { Cell, TerrainType } from "./Game";
 import type { GameMap, GameMapTilePage, TileRef } from "./GameMap";
+import {
+  checkedTileState,
+  ownerFromTileState,
+  stateWithOwner,
+  type TileStateArray,
+} from "./OwnerIdCodec";
 
 export interface TerrainPageInput {
   readonly pageX: number;
@@ -18,7 +24,7 @@ interface InternalTilePage {
   readonly width: number;
   readonly height: number;
   readonly terrain: Uint8Array;
-  state: Uint16Array | null;
+  state: TileStateArray | null;
   publicPage: GameMapTilePage;
 }
 
@@ -30,12 +36,34 @@ interface InternalTilePage {
  * terrain/state allocation is created here.
  */
 export class PagedGameMap implements GameMap {
+  /** Preloaded terrain can be reused without allocating/downloading it twice. */
+  withWideOwners(): PagedGameMap {
+    if (this.wideOwners) return this;
+    if (this.hasAllocatedState())
+      throw new Error("Cannot reinterpret a live map");
+    return new PagedGameMap(
+      this.width_,
+      this.height_,
+      this.pageSize_,
+      this.pages.map((p) => ({
+        pageX: p.pageX,
+        pageY: p.pageY,
+        width: p.width,
+        height: p.height,
+        terrain: p.terrain,
+      })),
+      this.landTiles_,
+      true,
+    );
+  }
+  get ownerIdBits(): 12 | 16 {
+    return this.wideOwners ? 16 : 12;
+  }
   private static readonly IS_LAND_BIT = 7;
   private static readonly SHORELINE_BIT = 6;
   private static readonly OCEAN_BIT = 5;
   private static readonly MAGNITUDE_MASK = 0x1f;
   private static readonly IMPASSABLE_MAGNITUDE = 31;
-  private static readonly PLAYER_ID_MASK = 0xfff;
   private static readonly FALLOUT_BIT = 13;
   private static readonly DEFENSE_BONUS_BIT = 14;
 
@@ -55,12 +83,20 @@ export class PagedGameMap implements GameMap {
   observeState(listener: (tile: TileRef) => void): () => void {
     this.stateObservers.add(listener);
     const refresh = () => {
-      this.stateObserver = this.stateObservers.size === 0 ? undefined :
-        this.stateObservers.size === 1 ? this.stateObservers.values().next().value :
-        (tile) => { for (const callback of this.stateObservers) callback(tile); };
+      this.stateObserver =
+        this.stateObservers.size === 0
+          ? undefined
+          : this.stateObservers.size === 1
+            ? this.stateObservers.values().next().value
+            : (tile) => {
+                for (const callback of this.stateObservers) callback(tile);
+              };
     };
     refresh();
-    return () => { this.stateObservers.delete(listener); refresh(); };
+    return () => {
+      this.stateObservers.delete(listener);
+      refresh();
+    };
   }
 
   constructor(
@@ -69,6 +105,7 @@ export class PagedGameMap implements GameMap {
     private readonly pageSize_: number,
     terrainPages: readonly TerrainPageInput[],
     private landTiles_: number,
+    private readonly wideOwners = false,
   ) {
     if (!Number.isSafeInteger(width_) || width_ <= 0) {
       throw new Error(`Invalid paged map width ${width_}`);
@@ -170,9 +207,9 @@ export class PagedGameMap implements GameMap {
           height: input.height,
           terrain: input.terrain,
           get state() {
-            return (internal.state ??= new Uint16Array(
-              input.width * input.height,
-            ));
+            return (internal.state ??= new (
+              wideOwners ? Uint32Array : Uint16Array
+            )(input.width * input.height));
           },
         } satisfies GameMapTilePage;
         internal.publicPage = publicPage;
@@ -341,7 +378,9 @@ export class PagedGameMap implements GameMap {
   private setTileState(ref: TileRef, value: number): void {
     const { page, offset } = this.location(ref);
     if (value === 0 && page.state === null) return;
-    (page.state ??= new Uint16Array(page.width * page.height))[offset] = value;
+    (page.state ??= new (this.wideOwners ? Uint32Array : Uint16Array)(
+      page.width * page.height,
+    ))[offset] = value;
     this.stateObserver?.(ref);
   }
 
@@ -415,7 +454,7 @@ export class PagedGameMap implements GameMap {
   }
 
   ownerID(ref: TileRef): number {
-    return this.tileState(ref) & PagedGameMap.PLAYER_ID_MASK;
+    return ownerFromTileState(this.tileState(ref));
   }
 
   hasOwner(ref: TileRef): boolean {
@@ -423,15 +462,14 @@ export class PagedGameMap implements GameMap {
   }
 
   setOwnerID(ref: TileRef, playerId: number): void {
-    if (playerId > PagedGameMap.PLAYER_ID_MASK || playerId < 0) {
-      throw new Error(
-        `Player ID ${playerId} exceeds maximum value ${PagedGameMap.PLAYER_ID_MASK}`,
-      );
-    }
+    // Validate before lazy allocation, including negative/fractional IDs.
+    stateWithOwner(0, playerId, this.wideOwners);
     const { page, offset } = this.location(ref);
     if (playerId === 0 && page.state === null) return;
-    const state = (page.state ??= new Uint16Array(page.width * page.height));
-    state[offset] = (state[offset] & ~PagedGameMap.PLAYER_ID_MASK) | playerId;
+    const state = (page.state ??= new (
+      this.wideOwners ? Uint32Array : Uint16Array
+    )(page.width * page.height));
+    state[offset] = stateWithOwner(state[offset], playerId, this.wideOwners);
     this.stateObserver?.(ref);
   }
 
@@ -445,7 +483,9 @@ export class PagedGameMap implements GameMap {
       (page.state?.[offset] ?? 0) & (1 << PagedGameMap.FALLOUT_BIT),
     );
     if (existing === value) return;
-    const state = (page.state ??= new Uint16Array(page.width * page.height));
+    const state = (page.state ??= new (
+      this.wideOwners ? Uint32Array : Uint16Array
+    )(page.width * page.height));
     state[offset] = value
       ? state[offset] | (1 << PagedGameMap.FALLOUT_BIT)
       : state[offset] & ~(1 << PagedGameMap.FALLOUT_BIT);
@@ -460,7 +500,9 @@ export class PagedGameMap implements GameMap {
   setDefenseBonus(ref: TileRef, value: boolean): void {
     const { page, offset } = this.location(ref);
     if (!value && page.state === null) return;
-    const state = (page.state ??= new Uint16Array(page.width * page.height));
+    const state = (page.state ??= new (
+      this.wideOwners ? Uint32Array : Uint16Array
+    )(page.width * page.height));
     state[offset] = value
       ? state[offset] | (1 << PagedGameMap.DEFENSE_BONUS_BIT)
       : state[offset] & ~(1 << PagedGameMap.DEFENSE_BONUS_BIT);
@@ -626,14 +668,14 @@ export class PagedGameMap implements GameMap {
     return seen;
   }
 
-  tileStateBuffer(): Uint16Array {
+  tileStateBuffer(): TileStateArray {
     throw new Error(
       "PagedGameMap has no contiguous tile-state buffer; consume tilePages() instead",
     );
   }
 
   updateTile(ref: TileRef, packed: number): boolean {
-    const state = packed & 0xffff;
+    const state = checkedTileState(packed, this.wideOwners);
     const terrain = (packed >>> 16) & 0xff;
     const { page, offset } = this.location(ref);
     const existingState = page.state?.[offset] ?? 0;
@@ -641,8 +683,9 @@ export class PagedGameMap implements GameMap {
       existingState & (1 << PagedGameMap.FALLOUT_BIT),
     );
     if (state !== 0 || page.state !== null) {
-      (page.state ??= new Uint16Array(page.width * page.height))[offset] =
-        state;
+      (page.state ??= new (this.wideOwners ? Uint32Array : Uint16Array)(
+        page.width * page.height,
+      ))[offset] = state;
     }
     const newFallout = Boolean(state & (1 << PagedGameMap.FALLOUT_BIT));
     if (existingFallout !== newFallout)

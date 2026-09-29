@@ -9,8 +9,10 @@ import {
 import { TileRef } from "../game/GameMap";
 import { ErrorUpdate, GameUpdateViewData } from "../game/GameUpdates";
 import { ClientID, GameStartInfo, Turn } from "../Schemas";
+import type { WorldHistoryResponse } from "../WorldHistory";
 
 export type WorkerMessageType =
+  | "world_history_result"
   | "init"
   | "initialized"
   | "turn"
@@ -164,6 +166,7 @@ export type MainThreadMessage =
 
 // Message send from worker
 export type WorkerMessage =
+  | { type: "world_history_result"; id?: string; result: WorldHistoryResponse }
   | InitializedMessage
   | GameUpdateMessage
   | GameUpdateBatchMessage

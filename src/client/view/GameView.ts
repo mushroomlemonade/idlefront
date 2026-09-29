@@ -22,6 +22,7 @@ import {
   MotionPlanRecord,
   unpackMotionPlans,
 } from "../../core/game/MotionPlans";
+import { packTileState } from "../../core/game/OwnerIdCodec";
 import { TerrainMapData } from "../../core/game/TerrainMapLoader";
 import { TerraNulliusImpl } from "../../core/game/TerraNulliusImpl";
 import { UnitGrid, UnitPredicate } from "../../core/game/UnitGrid";
@@ -36,6 +37,7 @@ import { buildRelationMatrix } from "../render/frame/derive/RelationMatrix";
 import { RailroadCache } from "../render/frame/RailroadCache";
 import type { SpiralParams } from "../render/frame/SpiralTrails";
 import { SpiralTrails } from "../render/frame/SpiralTrails";
+import { TradeTraffic } from "../render/frame/TradeTraffic";
 import { TrailManager } from "../render/frame/TrailManager";
 import type { FrameData, NameEntry } from "../render/types";
 import { STRUCTURE_TYPES } from "../render/types";
@@ -73,6 +75,19 @@ type TrainPlanState = {
 
 export class GameView implements GameMap {
   private lastUpdate: GameUpdateViewData | null;
+  private tradeTraffic?: TradeTraffic;
+  private serverCorridors = false;
+  private readonly viewObservers = new Set<
+    (update: GameUpdateViewData) => void
+  >();
+
+  /** Presentation observers receive only the already fog-filtered client view. */
+  public observeUpdates(
+    observer: (update: GameUpdateViewData) => void,
+  ): () => void {
+    this.viewObservers.add(observer);
+    return () => this.viewObservers.delete(observer);
+  }
   private startTick: Tick | null = null;
   private smallIDToID = new Map<number, PlayerID>();
   private _players = new Map<PlayerID, PlayerView>();
@@ -167,7 +182,7 @@ export class GameView implements GameMap {
    * client map remains page-backed; this can be removed once every render pass
    * consumes tilePages() directly.
    */
-  private readonly renderTileState: Uint16Array;
+  private readonly renderTileState: Uint16Array | Uint32Array;
 
   constructor(
     public worker: WorkerClient,
@@ -397,9 +412,9 @@ export class GameView implements GameMap {
       for (let i = 0; i + 2 < runs.length; i += 3) {
         const start = runs[i];
         const end = start + runs[i + 1];
-        const tileState = runs[i + 2] & 0xffff;
+        const tileState = runs[i + 2] & 0xfffff;
         for (let tile = start; tile < end; tile++) {
-          const state = tileState | (this._map.terrainByte(tile) << 16);
+          const state = packTileState(tileState, this._map.terrainByte(tile));
           this.updateTile(tile, state);
           this.updatedTiles.push(tile);
         }
@@ -410,8 +425,7 @@ export class GameView implements GameMap {
     if (terrain !== undefined) {
       for (let i = 0; i + 1 < terrain.length; i += 2) {
         const tile = terrain[i];
-        const state =
-          this._map.tileState(tile) | ((terrain[i + 1] & 0xff) << 16);
+        const state = packTileState(this._map.tileState(tile), terrain[i + 1]);
         if (this.updateTile(tile, state)) this.updatedTerrainTiles.push(tile);
         this.updatedTiles.push(tile);
       }
@@ -662,6 +676,15 @@ export class GameView implements GameMap {
     this.rebuildMotionPlannedUnitIdsCacheIfDirty();
 
     this.populateFrame(gu);
+    for (const observer of this.viewObservers) {
+      try {
+        observer(gu);
+      } catch (error) {
+        // A presentation widget must never break live state application.
+        this.viewObservers.delete(observer);
+        console.warn("Disabled failed view observer", error);
+      }
+    }
   }
 
   // ── FrameData population ────────────────────────────────────────────────
@@ -695,16 +718,18 @@ export class GameView implements GameMap {
     for (const id of this._trailUnitIds) {
       if (this._unitStates.get(id)?.isActive) this._trailIdsScratch.push(id);
     }
-    this.trailManager.update(
-      this._unitStates as Map<number, import("../render/types").UnitState>,
-      this._trailIdsScratch,
-    );
+    if (!deferGlobalDerived)
+      this.trailManager.update(
+        this._unitStates as Map<number, import("../render/types").UnitState>,
+        this._trailIdsScratch,
+      );
     // Spiral nukeTrail ribbons follow the same tracked units; extends the
     // path of each live spiral-cosmetic nuke and drops dead ones.
-    this.spiralTrails.update(
-      this._unitStates as Map<number, import("../render/types").UnitState>,
-      this._trailIdsScratch,
-    );
+    if (!deferGlobalDerived)
+      this.spiralTrails.update(
+        this._unitStates as Map<number, import("../render/types").UnitState>,
+        this._trailIdsScratch,
+      );
 
     // Names map — rebuilt only when a placement record arrived or a player
     // was added (nameData values cannot change between those ticks). Entry
@@ -734,6 +759,53 @@ export class GameView implements GameMap {
       -readonly [K in keyof FrameData]: FrameData[K];
     };
     f.tick = gu.tick;
+    if (gu.packedTradeCorridors !== undefined) {
+      this.serverCorridors = true;
+      const packed = gu.packedTradeCorridors,
+        lines = new Float32Array((packed.length / 4) * 6),
+        width = this.width();
+      for (let i = 0, j = 0; i < packed.length; i += 4, j += 6) {
+        const a = packed[i],
+          b = packed[i + 1];
+        lines.set(
+          [
+            (a % width) + 0.5,
+            Math.floor(a / width) + 0.5,
+            (b % width) + 0.5,
+            Math.floor(b / width) + 0.5,
+            packed[i + 2] / 65535,
+            packed[i + 3],
+          ],
+          j,
+        );
+      }
+      f.tradeCorridors = lines;
+    }
+    if (
+      !this.serverCorridors &&
+      !this.config().gameConfig().serverSimulation &&
+      (this.config().gameConfig().pressurePacing?.populationGrowthMultiplier ??
+        1) < 1 &&
+      !deferGlobalDerived
+    ) {
+      this.tradeTraffic ??= new TradeTraffic(this.width());
+      if (
+        gu.fog?.resetUnits ||
+        (gu.packedTerrainUpdates?.length ?? 0) > 0 ||
+        gu.updates[GameUpdateType.RailroadDestructionEvent].length > 0
+      )
+        this.tradeTraffic.reset();
+      const corridorConfig = this.config().gameConfig().tradeCorridors;
+      f.tradeCorridors = this.tradeTraffic.update(
+        gu.tick,
+        this._mobileUnitStates,
+        (tile) => this.isTileVisible(tile),
+        (corridorConfig?.idleSeconds ?? 1800) * 10,
+        corridorConfig?.hotTrips ?? 8,
+        this.fogEnabled && !this.fogGlobal,
+      );
+    }
+    f.snapshotLoading = deferGlobalDerived;
     f.fogEnabled = this.fogEnabled && !this.fogGlobal;
     f.inSpawnPhase = this.startTick === null;
     f.railroadDirty = this.railroadCache.railroadDirty;
@@ -769,7 +841,13 @@ export class GameView implements GameMap {
       f.relationsDirty = false;
     } else if (this._relationsDirty) {
       this._relationsDirty = false;
-      const rel = buildRelationMatrix(this._playerStates, this._teams);
+      const rel = buildRelationMatrix(
+        this._playerStates,
+        this._teams,
+        this._config.gameConfig().longplayStressTest === "owner16-v1"
+          ? (this._myPlayer?.smallID() ?? 0)
+          : undefined,
+      );
       f.relationMatrix = rel.matrix;
       f.relationSize = rel.size;
       f.relationsDirty = true;
@@ -818,7 +896,7 @@ export class GameView implements GameMap {
     }
 
     // Reset transient flags for next tick.
-    this._structuresDirty = false;
+    if (!deferGlobalDerived) this._structuresDirty = false;
   }
 
   /** Clear and repopulate _frame.events arrays from this tick's gu.updates. */
@@ -1504,7 +1582,7 @@ export class GameView implements GameMap {
   tileState(tile: TileRef): number {
     return this._map.tileState(tile);
   }
-  tileStateBuffer(): Uint16Array {
+  tileStateBuffer(): Uint16Array | Uint32Array {
     return this.renderTileState;
   }
 

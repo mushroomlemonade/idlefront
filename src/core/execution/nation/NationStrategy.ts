@@ -7,6 +7,7 @@ import {
   setAiMobilisationTarget,
 } from "../../game/PressurePopulation";
 import { canBuildTransportShip } from "../../game/TransportShipUtils";
+import { nationFleetBudget } from "../../NationFleetBudget";
 import { PseudoRandom } from "../../PseudoRandom";
 import { simpleHash } from "../../Util";
 import { BreakAllianceExecution } from "../alliance/BreakAllianceExecution";
@@ -291,15 +292,25 @@ export class NationStrategy {
       // Additional standing replenishment; native reactive spawning above remains.
       // Limit the force by both economy and useful port coverage, not infinite gold.
       const affordable = Number(p.gold() / (warshipCost || 1n));
-      const target = ports.length
-        ? Math.min(
-            48,
-            Math.max(
-              this.fleetTarget,
-              Math.min(ports.length * 3, Math.floor(affordable * 0.25)),
-            ),
-          )
-        : 0;
+      const target =
+        g.config().gameConfig().tradeCorridors?.economy === "area-v1"
+          ? nationFleetBudget(
+              ports.length,
+              p.units(UnitType.Warship).length,
+              p.gold(),
+              this.goldReserve,
+              warshipCost,
+              this.plan.kind === "invade",
+            )
+          : ports.length
+            ? Math.min(
+                48,
+                Math.max(
+                  this.fleetTarget,
+                  Math.min(ports.length * 3, Math.floor(affordable * 0.25)),
+                ),
+              )
+            : 0;
       configureNationFleet(g, p, {
         enabled: true,
         automaticPorts: true,

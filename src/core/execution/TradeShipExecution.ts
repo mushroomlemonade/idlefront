@@ -37,10 +37,15 @@ export class TradeShipExecution implements Execution {
     this.mg = mg;
     const stagger =
       TradeShipExecution._staggerCounter++ % WaterPathFinder.STAGGER_SPREAD;
-    this.pathFinder = new WaterPathFinder(mg, stagger);
+    this.pathFinder = new WaterPathFinder(mg, stagger, true);
     // Trade ships spawn at their source port. This hint changes neither spawn
     // validation nor routing if the port/terrain changes before the next tick.
-    queueWaterPreparation(mg, this.srcPort.tile(), this._dstPort.tile());
+    queueWaterPreparation(
+      mg,
+      this.srcPort.tile(),
+      this._dstPort.tile(),
+      !!mg.config().gameConfig().tradeCorridors,
+    );
   }
 
   tick(ticks: number): void {
