@@ -1716,8 +1716,7 @@ body[data-page="page-play"].atlas-theme .atlas-title-stage .atlas-identity-card 
 }
 
 body[data-page="page-play"].atlas-theme .atlas-title-stage .atlas-username-input,
-body[data-page="page-play"].atlas-theme .atlas-title-stage .atlas-username-input input,
-body[data-page="page-play"].atlas-theme .atlas-quick-play {
+body[data-page="page-play"].atlas-theme .atlas-title-stage .atlas-username-input input {
   width: 100%;
   min-height: var(--atlas-launch-control-height) !important;
   height: var(--atlas-launch-control-height);
@@ -1725,7 +1724,10 @@ body[data-page="page-play"].atlas-theme .atlas-quick-play {
 }
 
 body[data-page="page-play"].atlas-theme .atlas-quick-play {
-  padding-block: 0.25rem;
+  width: 100%;
+  min-height: 4.4rem;
+  height: auto;
+  border-radius: var(--atlas-launch-control-radius) !important;
 }
 
 body[data-page="page-play"].atlas-theme .atlas-quick-play::before {
