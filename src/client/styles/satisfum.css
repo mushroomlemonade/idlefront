@@ -1703,3 +1703,32 @@ body[data-page="page-play"].atlas-theme .atlas-title-stage .atlas-identity-card 
 body[data-page="page-play"].atlas-theme .atlas-title-stage .atlas-app-identity::before {
   display: none;
 }
+
+/* The name entry and the action that uses it are one paired control group.
+ * Keep their outer geometry identical even though their materials differ. */
+body[data-page="page-play"].atlas-theme .atlas-title-stage .atlas-launch-console {
+  --atlas-launch-control-height: 3.15rem;
+  --atlas-launch-control-radius: 9px;
+}
+
+body[data-page="page-play"].atlas-theme .atlas-title-stage .atlas-identity-card {
+  padding-inline: 0;
+}
+
+body[data-page="page-play"].atlas-theme .atlas-title-stage .atlas-username-input,
+body[data-page="page-play"].atlas-theme .atlas-title-stage .atlas-username-input input,
+body[data-page="page-play"].atlas-theme .atlas-quick-play {
+  width: 100%;
+  min-height: var(--atlas-launch-control-height) !important;
+  height: var(--atlas-launch-control-height);
+  border-radius: var(--atlas-launch-control-radius) !important;
+}
+
+body[data-page="page-play"].atlas-theme .atlas-quick-play {
+  padding-block: 0.25rem;
+}
+
+body[data-page="page-play"].atlas-theme .atlas-quick-play::before {
+  border-radius: calc(var(--atlas-launch-control-radius) - 2px)
+    calc(var(--atlas-launch-control-radius) - 2px) 44% 44%;
+}
