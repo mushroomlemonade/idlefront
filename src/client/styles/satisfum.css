@@ -1688,3 +1688,24 @@ body.atlas-theme .pw-panel__header > div {
     background-image: none !important;
   }
 }
+
+/* The landing screen is a composition, not a stack of framed cards. Keep the
+ * existing spacing and the actual input/action surfaces, but let the mark and
+ * login row sit directly on the page so the launch console is not boxed three
+ * times before the player reaches Play. */
+body[data-page="page-play"].atlas-theme .atlas-title-stage .atlas-launch-console,
+body[data-page="page-play"].atlas-theme .atlas-title-stage .atlas-app-identity,
+body[data-page="page-play"].atlas-theme .atlas-title-stage .atlas-identity-card {
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body[data-page="page-play"].atlas-theme .atlas-title-stage .atlas-launch-console {
+  border-radius: 0 !important;
+}
+
+body[data-page="page-play"].atlas-theme .atlas-title-stage .atlas-launch-console::after,
+body[data-page="page-play"].atlas-theme .atlas-title-stage .atlas-app-identity::before {
+  display: none;
+}
