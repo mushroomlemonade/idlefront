@@ -35,10 +35,34 @@ persistent-world-page {
   --pw-paper-ink: #2b2417;
   --pw-line: rgb(255 233 169 / 0.18);
   --pw-line-strong: rgb(255 226 137 / 0.34);
-  --pw-safe-top: max(0.7rem, env(safe-area-inset-top));
-  --pw-safe-right: max(0.75rem, env(safe-area-inset-right));
-  --pw-safe-bottom: max(0.7rem, env(safe-area-inset-bottom));
-  --pw-safe-left: max(0.75rem, env(safe-area-inset-left));
+  /* Browsers expose the env() insets; the Expo shell supplies the matching
+   * --native-safe-* values. Keep the action edge geometry in one place so
+   * every page can finish in the same safe bottom-right corner. */
+  --pw-device-safe-top: max(
+    env(safe-area-inset-top, 0px),
+    var(--native-safe-top, 0px)
+  );
+  --pw-device-safe-right: max(
+    env(safe-area-inset-right, 0px),
+    var(--native-safe-right, 0px)
+  );
+  --pw-device-safe-bottom: max(
+    env(safe-area-inset-bottom, 0px),
+    var(--native-safe-bottom, 0px)
+  );
+  --pw-device-safe-left: max(
+    env(safe-area-inset-left, 0px),
+    var(--native-safe-left, 0px)
+  );
+  --pw-safe-top: max(0.7rem, var(--pw-device-safe-top));
+  --pw-safe-right: max(0.75rem, var(--pw-device-safe-right));
+  --pw-safe-bottom: max(0.7rem, var(--pw-device-safe-bottom));
+  --pw-safe-left: max(0.75rem, var(--pw-device-safe-left));
+  --pw-device-bottom-corner: clamp(
+    11px,
+    calc(var(--pw-device-safe-bottom) * 1.5 - 6px),
+    48px
+  );
   --pw-spring: cubic-bezier(0.18, 0.89, 0.26, 1.18);
   --pw-button-spring: cubic-bezier(0.16, 1.42, 0.3, 1);
   --pw-glide: cubic-bezier(0.2, 0.72, 0.2, 1);
@@ -2620,6 +2644,21 @@ persistent-world-countdown {
   gap: 0.55rem;
 }
 
+/* The primary move always terminates an action row. This keeps RSVP, resume,
+ * and host-start discoverable in the same place without changing the order of
+ * the supporting information or destructive controls. */
+.pw-lobby-actions .pw-next-action {
+  margin-left: auto;
+}
+
+.pw-lobby-actions--go {
+  border-bottom-right-radius: var(--pw-device-bottom-corner);
+}
+
+.pw-lobby-actions--go .pw-next-action {
+  border-bottom-right-radius: var(--pw-device-bottom-corner);
+}
+
 .pw-membership-check {
   display: grid;
   width: 2rem;
@@ -2707,7 +2746,7 @@ persistent-world-creation-wizard {
       transparent 1px 4px
     ),
     linear-gradient(145deg, #071712, #020b09);
-  padding: max(var(--pw-safe-top), var(--native-safe-top, 0px)) 6px 10px;
+  padding: var(--pw-safe-top) var(--pw-safe-right) 0 var(--pw-safe-left);
 }
 
 .pw-wizard__header {
@@ -3394,6 +3433,10 @@ persistent-world-creation-wizard {
   min-width: 8.5rem;
 }
 
+.pw-wizard__footer .pw-next-action {
+  margin-left: auto;
+}
+
 /* Navigation never participates in the changing page's scroll/layout. */
 .pw-wizard .pw-wizard__command-panel {
   width: min(58rem, 100%);
@@ -3401,31 +3444,11 @@ persistent-world-creation-wizard {
   display: grid;
   grid-template-rows: 48px 48px minmax(0, auto) 52px;
   gap: 6px;
-  padding: 10px 12px max(12px, var(--native-safe-area-bottom, 0px));
+  padding: 10px 12px max(12px, var(--pw-device-safe-bottom));
   border: 1px solid #776748;
   border-radius: 11px 11px
-    clamp(
-      11px,
-      calc(
-        max(
-            env(safe-area-inset-bottom, 0px),
-            var(--native-safe-area-bottom, 0px)
-          ) *
-          1.5 - 6px
-      ),
-      48px
-    )
-    clamp(
-      11px,
-      calc(
-        max(
-            env(safe-area-inset-bottom, 0px),
-            var(--native-safe-area-bottom, 0px)
-          ) *
-          1.5 - 6px
-      ),
-      48px
-    );
+    clamp(11px, calc(var(--pw-device-safe-bottom) * 1.5 - 6px), 48px)
+    clamp(11px, calc(var(--pw-device-safe-bottom) * 1.5 - 6px), 48px);
   background: var(--atlas-hud-surface, linear-gradient(#24302b, #091611));
   box-shadow: var(--atlas-hud-shadow, inset 0 1px #ffffff25, 0 3px 10px #0006);
 }
@@ -3446,7 +3469,7 @@ persistent-world-creation-wizard {
 .pw-wizard .pw-wizard__command-panel .pw-wizard__footer {
   grid-row: 4;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(5.5rem, 0.7fr) minmax(8rem, 1fr);
   padding: 0;
   border: 0;
   width: 100%;
@@ -3455,6 +3478,10 @@ persistent-world-creation-wizard {
   min-width: 0;
   width: 100%;
   min-height: 48px;
+}
+
+.pw-wizard .pw-wizard__command-panel .pw-next-action {
+  border-bottom-right-radius: var(--pw-device-bottom-corner);
 }
 .pw-wizard .pw-wizard__command-panel .pw-alert {
   grid-row: 3;
@@ -3610,6 +3637,11 @@ persistent-world-creation-wizard {
 .pw-identity-card > small {
   color: #736e61;
   font-size: 0.52rem;
+}
+
+.pw-identity-card .pw-next-action {
+  min-width: 9rem;
+  justify-self: end;
 }
 
 /* Loading, errors, notices ----------------------------------------------- */
@@ -4223,8 +4255,8 @@ persistent-world-creation-wizard {
 
 @media (max-width: 640px) {
   persistent-world-page {
-    --pw-safe-right: max(0.6rem, env(safe-area-inset-right));
-    --pw-safe-left: max(0.6rem, env(safe-area-inset-left));
+    --pw-safe-right: max(0.6rem, var(--pw-device-safe-right));
+    --pw-safe-left: max(0.6rem, var(--pw-device-safe-left));
   }
 
   .pw-app-header {

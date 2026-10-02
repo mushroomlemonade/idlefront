@@ -119,22 +119,20 @@ export class PersistentWorldPage extends LitElement {
   render() {
     return html`
       <div class="pw-app ${this.view === "lobby" ? "pw-app--lobby" : ""}">
-        ${
-          this.view === "identity"
-            ? this.renderIdentity()
-            : this.view === "wizard"
-              ? html`<persistent-world-creation-wizard
-                  .customGame=${this.customGame}
-                  .submitting=${this.submitting}
-                  .departing=${this.wizardDeparting}
-                  .error=${this.error}
-                  @world-create=${this.createWorld}
-                  @world-wizard-close=${this.returnFromWizard}
-                ></persistent-world-creation-wizard>`
-              : html`${this.renderHeader()}${
-                  this.view === "hub" ? this.renderHub() : this.renderLobby()
-                }`
-        }
+        ${this.view === "identity"
+          ? this.renderIdentity()
+          : this.view === "wizard"
+            ? html`<persistent-world-creation-wizard
+                .customGame=${this.customGame}
+                .submitting=${this.submitting}
+                .departing=${this.wizardDeparting}
+                .error=${this.error}
+                @world-create=${this.createWorld}
+                @world-wizard-close=${this.returnFromWizard}
+              ></persistent-world-creation-wizard>`
+            : html`${this.renderHeader()}${this.view === "hub"
+                ? this.renderHub()
+                : this.renderLobby()}`}
       </div>
     `;
   }
@@ -183,11 +181,9 @@ export class PersistentWorldPage extends LitElement {
         <idlefront-wordmark></idlefront-wordmark>
         <div class="pw-app-header__context">
           <span>${inLobby ? "Invitation lobby" : "Persistent worlds"}</span>
-          ${
-            this.session
-              ? html`<strong>${this.session.identity.displayName}</strong>`
-              : html`<strong>Guest view</strong>`
-          }
+          ${this.session
+            ? html`<strong>${this.session.identity.displayName}</strong>`
+            : html`<strong>Guest view</strong>`}
         </div>
         <div
           class="pw-header-signal pw-header-signal--${statusTone}"
@@ -210,28 +206,26 @@ export class PersistentWorldPage extends LitElement {
             </div>`,
           )}
         </div>
-        ${
-          !inLobby
-            ? html`<button
-                class="pw-header-action"
-                type="button"
-                @click=${this.beginCreate}
-              >
-                <span class="pw-header-action__plus" aria-hidden="true"
-                  ><svg viewBox="0 0 20 20" focusable="false">
-                    <path d="M10 4.25v11.5M4.25 10h11.5" /></svg></span
-                ><span>New world</span>
-              </button>`
-            : html`<button
-                class="pw-header-action pw-header-action--quiet"
-                type="button"
-                @click=${this.refreshLobby}
-                ?disabled=${this.loading}
-              >
-                <span class="pw-refresh-mark" aria-hidden="true">↻</span
-                ><span>Refresh</span>
-              </button>`
-        }
+        ${!inLobby
+          ? html`<button
+              class="pw-header-action"
+              type="button"
+              @click=${this.beginCreate}
+            >
+              <span class="pw-header-action__plus" aria-hidden="true"
+                ><svg viewBox="0 0 20 20" focusable="false">
+                  <path d="M10 4.25v11.5M4.25 10h11.5" /></svg></span
+              ><span>New world</span>
+            </button>`
+          : html`<button
+              class="pw-header-action pw-header-action--quiet"
+              type="button"
+              @click=${this.refreshLobby}
+              ?disabled=${this.loading}
+            >
+              <span class="pw-refresh-mark" aria-hidden="true">↻</span
+              ><span>Refresh</span>
+            </button>`}
       </header>
     `;
   }
@@ -279,31 +273,30 @@ export class PersistentWorldPage extends LitElement {
             </button>
           </div>
         </section>
-        ${
-          this.error && !this.loading
-            ? this.renderError("The world table is unavailable.", this.loadHub)
-            : this.loading
-              ? this.renderHubLoading()
-              : html`
-                  <div class="pw-hub__lists">
-                    <persistent-world-list
-                      heading=${placeholderCopy.worlds.playerListHeading}
-                      eyebrow=${placeholderCopy.worlds.playerListEyebrow}
-                      emptyHeading=${placeholderCopy.worlds.playerListEmptyHeading}
-                      emptyMessage=${placeholderCopy.worlds.playerListEmpty}
-                      .worlds=${this.myWorlds}
-                      @world-open=${this.openWorldEvent}
-                    ></persistent-world-list>
-                    <persistent-world-list
-                      heading=${placeholderCopy.worlds.publicListHeading}
-                      eyebrow=${placeholderCopy.worlds.publicListEyebrow}
-                      emptyMessage=${placeholderCopy.worlds.publicListEmpty}
-                      .worlds=${this.publicWorlds}
-                      @world-open=${this.openWorldEvent}
-                    ></persistent-world-list>
-                  </div>
-                `
-        }
+        ${this.error && !this.loading
+          ? this.renderError("The world table is unavailable.", this.loadHub)
+          : this.loading
+            ? this.renderHubLoading()
+            : html`
+                <div class="pw-hub__lists">
+                  <persistent-world-list
+                    heading=${placeholderCopy.worlds.playerListHeading}
+                    eyebrow=${placeholderCopy.worlds.playerListEyebrow}
+                    emptyHeading=${placeholderCopy.worlds
+                      .playerListEmptyHeading}
+                    emptyMessage=${placeholderCopy.worlds.playerListEmpty}
+                    .worlds=${this.myWorlds}
+                    @world-open=${this.openWorldEvent}
+                  ></persistent-world-list>
+                  <persistent-world-list
+                    heading=${placeholderCopy.worlds.publicListHeading}
+                    eyebrow=${placeholderCopy.worlds.publicListEyebrow}
+                    emptyMessage=${placeholderCopy.worlds.publicListEmpty}
+                    .worlds=${this.publicWorlds}
+                    @world-open=${this.openWorldEvent}
+                  ></persistent-world-list>
+                </div>
+              `}
       </main>
     `;
   }
@@ -367,21 +360,19 @@ export class PersistentWorldPage extends LitElement {
                 class=${this.lobbyTab === tab ? "is-active" : ""}
                 @click=${() => (this.lobbyTab = tab)}
               >
-                ${
-                  tab === "invitation"
-                    ? "World"
-                    : tab === "roster"
-                      ? `Roster · ${snapshot.members.length}`
-                      : "Chat"
-                }
+                ${tab === "invitation"
+                  ? "World"
+                  : tab === "roster"
+                    ? `Roster · ${snapshot.members.length}`
+                    : "Chat"}
               </button>`,
           )}
         </nav>
         <div class="pw-lobby__composition">
           <div
-            class="pw-lobby__invitation ${
-              this.lobbyTab === "invitation" ? "is-mobile-active" : ""
-            }"
+            class="pw-lobby__invitation ${this.lobbyTab === "invitation"
+              ? "is-mobile-active"
+              : ""}"
           >
             <persistent-world-invitation-card
               .snapshot=${snapshot}
@@ -391,78 +382,61 @@ export class PersistentWorldPage extends LitElement {
               @world-enter-runtime=${this.enterRuntimeFromCard}
               @world-dev-end=${this.endWorldForDevelopment}
             ></persistent-world-invitation-card>
-            ${
-              world.access === "private" &&
-              !snapshot.viewer.isMember &&
-              world.phase === "active"
-                ? html`<button
-                    class="pw-button pw-button--primary"
-                    type="button"
-                    @click=${() => this.requireIdentity("rsvp")}
-                  >
-                    Resume a nation
-                  </button>`
-                : nothing
-            }
-            ${
-              isPendingRuntime
-                ? html`<section
-                    class="pw-runtime-state pw-runtime-state--pending"
-                    role="status"
-                  >
+            ${isPendingRuntime
+              ? html`<section
+                  class="pw-runtime-state pw-runtime-state--pending"
+                  role="status"
+                >
+                  <span class="pw-runtime-state__orb" aria-hidden="true"
+                    ><i></i
+                  ></span>
+                  <div>
+                    <span
+                      class="pw-eyebrow"
+                      data-copy-slot="worlds.pendingEyebrow"
+                      >${placeholderCopy.worlds.pendingEyebrow}</span
+                    >
+                    <h2 data-copy-slot="worlds.pendingHeading">
+                      ${placeholderCopy.worlds.pendingHeading}
+                    </h2>
+                    <p data-copy-slot="worlds.pendingDescription">
+                      ${placeholderCopy.worlds.pendingDescription}
+                    </p>
+                  </div>
+                </section>`
+              : world.phase === "finished"
+                ? html`<section class="pw-runtime-state">
                     <span class="pw-runtime-state__orb" aria-hidden="true"
-                      ><i></i
-                    ></span>
+                      >✓</span
+                    >
                     <div>
                       <span
                         class="pw-eyebrow"
-                        data-copy-slot="worlds.pendingEyebrow"
-                        >${placeholderCopy.worlds.pendingEyebrow}</span
+                        data-copy-slot="worlds.finishedEyebrow"
+                        >${placeholderCopy.worlds.finishedEyebrow}</span
                       >
-                      <h2 data-copy-slot="worlds.pendingHeading">
-                        ${placeholderCopy.worlds.pendingHeading}
+                      <h2 data-copy-slot="worlds.finishedHeading">
+                        ${placeholderCopy.worlds.finishedHeading}
                       </h2>
-                      <p data-copy-slot="worlds.pendingDescription">
-                        ${placeholderCopy.worlds.pendingDescription}
+                      <p data-copy-slot="worlds.finishedDescription">
+                        ${placeholderCopy.worlds.finishedDescription}
                       </p>
                     </div>
                   </section>`
-                : world.phase === "finished"
-                  ? html`<section class="pw-runtime-state">
-                      <span class="pw-runtime-state__orb" aria-hidden="true"
-                        >✓</span
-                      >
-                      <div>
-                        <span
-                          class="pw-eyebrow"
-                          data-copy-slot="worlds.finishedEyebrow"
-                          >${placeholderCopy.worlds.finishedEyebrow}</span
-                        >
-                        <h2 data-copy-slot="worlds.finishedHeading">
-                          ${placeholderCopy.worlds.finishedHeading}
-                        </h2>
-                        <p data-copy-slot="worlds.finishedDescription">
-                          ${placeholderCopy.worlds.finishedDescription}
-                        </p>
-                      </div>
-                    </section>`
-                  : nothing
-            }
-            ${
-              world.startMode !== "host"
-                ? html`<persistent-world-reminder-picker
-                    .options=${snapshot.reminderOptionsMs}
-                    .selected=${snapshot.selectedReminderLeadTimesMs}
-                    ?disabled=${!snapshot.viewer.isMember || this.submitting}
-                    @world-reminders-change=${this.updateReminders}
-                  ></persistent-world-reminder-picker>`
-                : nothing
-            }
+                : nothing}
+            ${world.startMode !== "host"
+              ? html`<persistent-world-reminder-picker
+                  .options=${snapshot.reminderOptionsMs}
+                  .selected=${snapshot.selectedReminderLeadTimesMs}
+                  ?disabled=${!snapshot.viewer.isMember || this.submitting}
+                  @world-reminders-change=${this.updateReminders}
+                ></persistent-world-reminder-picker>`
+              : nothing}
           </div>
           <div
-            class="pw-lobby__roster ${
-              this.lobbyTab === "roster" ? "is-mobile-active" : ""
-            }"
+            class="pw-lobby__roster ${this.lobbyTab === "roster"
+              ? "is-mobile-active"
+              : ""}"
           >
             <persistent-world-roster
               .members=${snapshot.members}
@@ -471,9 +445,9 @@ export class PersistentWorldPage extends LitElement {
             ></persistent-world-roster>
           </div>
           <div
-            class="pw-lobby__chat ${
-              this.lobbyTab === "chat" ? "is-mobile-active" : ""
-            }"
+            class="pw-lobby__chat ${this.lobbyTab === "chat"
+              ? "is-mobile-active"
+              : ""}"
           >
             <persistent-world-quick-chat
               .messages=${snapshot.quickChat}
@@ -517,20 +491,11 @@ export class PersistentWorldPage extends LitElement {
     }
     if (snapshot.viewer.isMember) {
       return html` <div class="pw-lobby-actions">
-        ${
-          world.startMode === "host" && world.phase === "scheduled"
-            ? snapshot.viewer.isHost
-              ? html`<button
-                  class="pw-button pw-button--primary"
-                  type="button"
-                  ?disabled=${this.submitting}
-                  @click=${this.startCustomGame}
-                >
-                  ${this.submitting ? "Starting…" : "Start game"}
-                </button>`
-              : html`<span role="status">Waiting for the host to start</span>`
+        ${world.startMode === "host" && world.phase === "scheduled"
+          ? !snapshot.viewer.isHost
+            ? html`<span role="status">Waiting for the host to start</span>`
             : nothing
-        }
+          : nothing}
         <div class="pw-lobby-actions__membership">
           <span class="pw-membership-check" aria-hidden="true">✓</span
           ><span
@@ -540,28 +505,55 @@ export class PersistentWorldPage extends LitElement {
             ></span
           >
         </div>
-        ${
-          snapshot.viewer.canCancel
-            ? html`<button
-                class="pw-text-button pw-text-button--danger"
-                type="button"
-                @click=${this.cancelWorld}
-              >
-                Cancel invitation
-              </button>`
-            : nothing
-        }
-        ${
-          !snapshot.viewer.isHost && world.phase === "scheduled"
-            ? html`<button
-                class="pw-text-button"
-                type="button"
-                @click=${() => (this.confirmingLeave = true)}
-              >
-                Leave world
-              </button>`
-            : nothing
-        }
+        ${snapshot.viewer.canCancel
+          ? html`<button
+              class="pw-text-button pw-text-button--danger"
+              type="button"
+              @click=${this.cancelWorld}
+            >
+              Cancel invitation
+            </button>`
+          : nothing}
+        ${!snapshot.viewer.isHost && world.phase === "scheduled"
+          ? html`<button
+              class="pw-text-button"
+              type="button"
+              @click=${() => (this.confirmingLeave = true)}
+            >
+              Leave world
+            </button>`
+          : nothing}
+        ${world.startMode === "host" &&
+        world.phase === "scheduled" &&
+        snapshot.viewer.isHost
+          ? html`<button
+              class="pw-button pw-button--primary pw-next-action"
+              type="button"
+              ?disabled=${this.submitting}
+              @click=${this.startCustomGame}
+            >
+              ${this.submitting ? "Starting…" : "Start game"}
+            </button>`
+          : nothing}
+      </div>`;
+    }
+    if (
+      world.access === "private" &&
+      world.phase === "active" &&
+      !snapshot.viewer.isMember
+    ) {
+      return html`<div class="pw-lobby-actions pw-lobby-actions--go">
+        <div>
+          <span class="pw-eyebrow">Returning player</span>
+          <strong>Pick up your nation</strong>
+        </div>
+        <button
+          class="pw-button pw-button--primary pw-next-action"
+          type="button"
+          @click=${() => this.requireIdentity("rsvp")}
+        >
+          Resume a nation
+        </button>
       </div>`;
     }
     if (snapshot.viewer.canRsvp) {
@@ -573,27 +565,25 @@ export class PersistentWorldPage extends LitElement {
             >${placeholderCopy.worlds.invitationHeading}</strong
           >
         </div>
-        ${
-          world.mode === "teams"
-            ? html`<label class="pw-team-select"
-                ><span>Team</span
-                ><select
-                  .value=${this.selectedTeam}
-                  @change=${(event: Event) =>
-                    (this.selectedTeam = (
-                      event.currentTarget as HTMLSelectElement
-                    ).value)}
-                >
-                  <option value="team-1">Team 1</option>
-                  <option value="team-2">Team 2</option>
-                  <option value="team-3">Team 3</option>
-                  <option value="team-4">Team 4</option>
-                </select></label
-              >`
-            : nothing
-        }
+        ${world.mode === "teams"
+          ? html`<label class="pw-team-select"
+              ><span>Team</span
+              ><select
+                .value=${this.selectedTeam}
+                @change=${(event: Event) =>
+                  (this.selectedTeam = (
+                    event.currentTarget as HTMLSelectElement
+                  ).value)}
+              >
+                <option value="team-1">Team 1</option>
+                <option value="team-2">Team 2</option>
+                <option value="team-3">Team 3</option>
+                <option value="team-4">Team 4</option>
+              </select></label
+            >`
+          : nothing}
         <button
-          class="pw-button pw-button--primary"
+          class="pw-button pw-button--primary pw-next-action"
           type="button"
           ?disabled=${this.submitting}
           @click=${this.rsvp}
@@ -606,11 +596,9 @@ export class PersistentWorldPage extends LitElement {
       <div>
         <span class="pw-eyebrow">Viewing invitation</span
         ><strong
-          >${
-            world.phase === "scheduled"
-              ? "The roster is full or unavailable."
-              : "Late entry is closed."
-          }</strong
+          >${world.phase === "scheduled"
+            ? "The roster is full or unavailable."
+            : "Late entry is closed."}</strong
         >
       </div>
     </div>`;
@@ -683,41 +671,41 @@ export class PersistentWorldPage extends LitElement {
             @keydown=${(event: KeyboardEvent) =>
               event.key === "Enter" && this.createIdentity()}
         /></label>
-        ${
-          this.identityContinuation === "rsvp"
-            ? html`<label class="pw-field"
-                ><span>Game password</span>
-                <input
-                  type="password"
-                  autocomplete="current-password"
-                  maxlength="128"
-                  .value=${this.gamePassword}
-                  @input=${(event: Event) => (this.gamePassword = (event.target as HTMLInputElement).value)}
-                  @keydown=${(event: KeyboardEvent) => event.key === "Enter" && this.createIdentity()}
-                />
-                <small
-                  >To resume your nation, use exactly the same username as on
-                  your other device.</small
-                >
-              </label>`
-            : nothing
-        }
-        ${
-          this.error
-            ? html`<div class="pw-alert" role="alert">${this.error}</div>`
-            : nothing
-        }
+        ${this.identityContinuation === "rsvp"
+          ? html`<label class="pw-field"
+              ><span>Game password</span>
+              <input
+                type="password"
+                autocomplete="current-password"
+                maxlength="128"
+                .value=${this.gamePassword}
+                @input=${(event: Event) =>
+                  (this.gamePassword = (
+                    event.target as HTMLInputElement
+                  ).value)}
+                @keydown=${(event: KeyboardEvent) =>
+                  event.key === "Enter" && this.createIdentity()}
+              />
+              <small
+                >To resume your nation, use exactly the same username as on your
+                other device.</small
+              >
+            </label>`
+          : nothing}
+        ${this.error
+          ? html`<div class="pw-alert" role="alert">${this.error}</div>`
+          : nothing}
+        <small data-copy-slot="worlds.identityPrivacy"
+          >${placeholderCopy.worlds.identityPrivacy}</small
+        >
         <button
-          class="pw-button pw-button--primary"
+          class="pw-button pw-button--primary pw-next-action"
           type="button"
           ?disabled=${this.submitting || !this.identityName.trim()}
           @click=${this.createIdentity}
         >
           ${this.submitting ? "Sealing identity…" : "Continue"}
         </button>
-        <small data-copy-slot="worlds.identityPrivacy"
-          >${placeholderCopy.worlds.identityPrivacy}</small
-        >
       </section>
     </main>`;
   }
@@ -1077,10 +1065,12 @@ export class PersistentWorldPage extends LitElement {
         await persistentWorldApi.worldPlayToken(worldId);
         persistentWorldApi.rememberGameWorld(runtimeGameId, worldId);
       } catch (error) {
-        if (!(
-          error instanceof PersistentWorldApiError &&
-          error.code === "ACCOUNT_SEAT"
-        )) {
+        if (
+          !(
+            error instanceof PersistentWorldApiError &&
+            error.code === "ACCOUNT_SEAT"
+          )
+        ) {
           this.showNotice(this.errorMessage(error), "error");
           return;
         }

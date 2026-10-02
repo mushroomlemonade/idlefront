@@ -108,15 +108,13 @@ export class PersistentWorldCreationWizard extends LitElement {
         aria-busy=${this.submitting || this.departing ? "true" : "false"}
       >
         <div class="pw-wizard__viewport">
-          ${
-            this.step === 0
-              ? this.renderWorldStep()
-              : this.step === 1
-                ? this.renderPlayersStep()
-                : this.step === 2
-                  ? this.renderScheduleStep()
-                  : this.renderInvitationStep()
-          }
+          ${this.step === 0
+            ? this.renderWorldStep()
+            : this.step === 1
+              ? this.renderPlayersStep()
+              : this.step === 2
+                ? this.renderScheduleStep()
+                : this.renderInvitationStep()}
         </div>
         <div class="pw-wizard__command-panel">
           <header class="pw-wizard__header">
@@ -141,37 +139,33 @@ export class PersistentWorldCreationWizard extends LitElement {
 
           <ol class="pw-wizard__progress" aria-label="Setup progress">
             ${stepNames.map(
-            (label, index) => html`
-              <li
-                class=${
-                  index === this.step
+              (label, index) => html`
+                <li
+                  class=${index === this.step
                     ? "is-current"
                     : index < this.step
                       ? "is-complete"
-                      : ""
-                }
-              >
-                <button
-                  class="pw-wizard__step"
-                  type="button"
-                  aria-label=${`Go to ${label} step`}
-                  aria-current=${index === this.step ? "step" : nothing}
-                  ?disabled=${!this.canOpenStep(index)}
-                  @click=${() => this.openStep(index)}
+                      : ""}
                 >
-                  <span>${index < this.step ? "✓" : index + 1}</span
-                  ><small>${label}</small>
-                </button>
-              </li>
-            `,
-          )}
+                  <button
+                    class="pw-wizard__step"
+                    type="button"
+                    aria-label=${`Go to ${label} step`}
+                    aria-current=${index === this.step ? "step" : nothing}
+                    ?disabled=${!this.canOpenStep(index)}
+                    @click=${() => this.openStep(index)}
+                  >
+                    <span>${index < this.step ? "✓" : index + 1}</span
+                    ><small>${label}</small>
+                  </button>
+                </li>
+              `,
+            )}
           </ol>
 
-          ${
-          this.error
+          ${this.error
             ? html`<div class="pw-alert" role="alert">${this.error}</div>`
-            : nothing
-        }
+            : nothing}
 
           <footer class="pw-wizard__footer">
             <button
@@ -183,18 +177,18 @@ export class PersistentWorldCreationWizard extends LitElement {
               ${this.step === 0 ? "Cancel" : "Back"}
             </button>
             <button
-              class="pw-button pw-button--primary"
+              class="pw-button pw-button--primary pw-next-action"
               type="button"
               @click=${this.next}
-              ?disabled=${this.submitting || this.departing || !this.canContinue()}
+              ?disabled=${this.submitting ||
+              this.departing ||
+              !this.canContinue()}
             >
-              ${
-              this.submitting
+              ${this.submitting
                 ? "Preparing invitation…"
                 : this.step === 3
                   ? "Create invitation"
-                  : "Continue"
-            }
+                  : "Continue"}
             </button>
           </footer>
         </div>
@@ -231,7 +225,9 @@ export class PersistentWorldCreationWizard extends LitElement {
           ${CUSTOM_WORLD_PRESETS.map(
             (id) =>
               html` <label
-                class="pw-choice-card ${this.gamePreset === id ? "is-selected" : ""}"
+                class="pw-choice-card ${this.gamePreset === id
+                  ? "is-selected"
+                  : ""}"
               >
                 <input
                   type="radio"
@@ -251,74 +247,89 @@ export class PersistentWorldCreationWizard extends LitElement {
               </label>`,
           )}
         </fieldset>
-        ${
-          this.customGame
-            ? html`<div class="pw-settings-row">
-                <label class="pw-field"
-                  ><span
-                    >${this.pressurePacing.populationGrowthMultiplier !== undefined ? "Population growth · native rate multiplier" : "Population growth · doubling time (seconds)"}</span
-                  >
-                  <input
-                    type="number"
-                    inputmode="decimal"
-                    min=${this.pressurePacing.populationGrowthMultiplier !== undefined ? "0.01" : "60"}
-                    max=${this.pressurePacing.populationGrowthMultiplier !== undefined ? "100" : "604800"}
-                    step=${this.pressurePacing.populationGrowthMultiplier !== undefined ? "0.1" : "60"}
-                    style="font-size:16px"
-                    .value=${String(this.pressurePacing.populationGrowthMultiplier ?? this.pressurePacing.populationDoublingSeconds)}
-                    @change=${(e: Event) => {
-                      const n = Number((e.target as HTMLInputElement).value);
-                      if (
-                        this.pressurePacing.populationGrowthMultiplier !==
-                        undefined
-                      ) {
-                        if (Number.isFinite(n))
-                          this.pressurePacing = {
-                            ...this.pressurePacing,
-                            populationGrowthMultiplier: Math.max(
-                              0.01,
-                              Math.min(100, n),
-                            ),
-                          };
-                        return;
-                      }
+        ${this.customGame
+          ? html`<div class="pw-settings-row">
+              <label class="pw-field"
+                ><span
+                  >${this.pressurePacing.populationGrowthMultiplier !==
+                  undefined
+                    ? "Population growth · native rate multiplier"
+                    : "Population growth · doubling time (seconds)"}</span
+                >
+                <input
+                  type="number"
+                  inputmode="decimal"
+                  min=${this.pressurePacing.populationGrowthMultiplier !==
+                  undefined
+                    ? "0.01"
+                    : "60"}
+                  max=${this.pressurePacing.populationGrowthMultiplier !==
+                  undefined
+                    ? "100"
+                    : "604800"}
+                  step=${this.pressurePacing.populationGrowthMultiplier !==
+                  undefined
+                    ? "0.1"
+                    : "60"}
+                  style="font-size:16px"
+                  .value=${String(
+                    this.pressurePacing.populationGrowthMultiplier ??
+                      this.pressurePacing.populationDoublingSeconds,
+                  )}
+                  @change=${(e: Event) => {
+                    const n = Number((e.target as HTMLInputElement).value);
+                    if (
+                      this.pressurePacing.populationGrowthMultiplier !==
+                      undefined
+                    ) {
                       if (Number.isFinite(n))
                         this.pressurePacing = {
                           ...this.pressurePacing,
-                          populationDoublingSeconds: Math.max(
-                            60,
-                            Math.min(604800, n),
+                          populationGrowthMultiplier: Math.max(
+                            0.01,
+                            Math.min(100, n),
                           ),
                         };
-                    }}
-                  />
-                </label>
-                <label class="pw-field"
-                  ><span>Mobilisation · halfway to target (seconds)</span>
-                  <input
-                    type="number"
-                    inputmode="numeric"
-                    min="1"
-                    max="86400"
-                    step="1"
-                    style="font-size:16px"
-                    .value=${String(this.pressurePacing.mobilisationHalfLifeSeconds)}
-                    @change=${(e: Event) => {
-                      const n = Number((e.target as HTMLInputElement).value);
-                      if (Number.isFinite(n))
-                        this.pressurePacing = {
-                          ...this.pressurePacing,
-                          mobilisationHalfLifeSeconds: Math.max(
-                            1,
-                            Math.min(86400, n),
-                          ),
-                        };
-                    }}
-                  />
-                </label>
-              </div>`
-            : nothing
-        }
+                      return;
+                    }
+                    if (Number.isFinite(n))
+                      this.pressurePacing = {
+                        ...this.pressurePacing,
+                        populationDoublingSeconds: Math.max(
+                          60,
+                          Math.min(604800, n),
+                        ),
+                      };
+                  }}
+                />
+              </label>
+              <label class="pw-field"
+                ><span>Mobilisation · halfway to target (seconds)</span>
+                <input
+                  type="number"
+                  inputmode="numeric"
+                  min="1"
+                  max="86400"
+                  step="1"
+                  style="font-size:16px"
+                  .value=${String(
+                    this.pressurePacing.mobilisationHalfLifeSeconds,
+                  )}
+                  @change=${(e: Event) => {
+                    const n = Number((e.target as HTMLInputElement).value);
+                    if (Number.isFinite(n))
+                      this.pressurePacing = {
+                        ...this.pressurePacing,
+                        mobilisationHalfLifeSeconds: Math.max(
+                          1,
+                          Math.min(86400, n),
+                        ),
+                      };
+                  }}
+                />
+              </label>
+            </div>`
+          : nothing}
         <p class="pw-disclosure">
           Manual and automatic mobilisation use the same rate. Growth slows near
           population capacity.
@@ -361,51 +372,44 @@ export class PersistentWorldCreationWizard extends LitElement {
               "access",
             )}
           </fieldset>
-          ${
-            this.customGame
-              ? html`<fieldset class="pw-choice-grid">
-                  <legend>Diplomacy</legend>
-                  ${this.binaryChoices(
+          ${this.customGame
+            ? html`<fieldset class="pw-choice-grid">
+                <legend>Diplomacy</legend>
+                ${this.binaryChoices(
+                  [
                     [
-                      [
-                        "ffa",
-                        "Free for all",
-                        placeholderCopy.wizard.freeForAllDescription,
-                      ],
-                      [
-                        "teams",
-                        "Teams",
-                        placeholderCopy.wizard.teamsDescription,
-                      ],
+                      "ffa",
+                      "Free for all",
+                      placeholderCopy.wizard.freeForAllDescription,
                     ],
-                    this.mode,
-                    (value) => (this.mode = value as PersistentWorldMode),
-                    "mode",
-                  )}
-                </fieldset>`
-              : html`<div class="pw-schedule-confirmation">
-                  <span>Diplomacy</span><strong>Free for all</strong>
-                </div>`
-          }
+                    ["teams", "Teams", placeholderCopy.wizard.teamsDescription],
+                  ],
+                  this.mode,
+                  (value) => (this.mode = value as PersistentWorldMode),
+                  "mode",
+                )}
+              </fieldset>`
+            : html`<div class="pw-schedule-confirmation">
+                <span>Diplomacy</span><strong>Free for all</strong>
+              </div>`}
         </div>
-        ${
-          this.access === "private"
-            ? html`<label class="pw-field"
-                ><span>Game password</span>
-                <input
-                  type="password"
-                  autocomplete="new-password"
-                  maxlength="128"
-                  .value=${this.password}
-                  @input=${(event: Event) => (this.password = (event.target as HTMLInputElement).value)}
-                />
-                <small
-                  >Share this password and the invitation. Use the same username
-                  to resume on another device.</small
-                >
-              </label>`
-            : nothing
-        }
+        ${this.access === "private"
+          ? html`<label class="pw-field"
+              ><span>Game password</span>
+              <input
+                type="password"
+                autocomplete="new-password"
+                maxlength="128"
+                .value=${this.password}
+                @input=${(event: Event) =>
+                  (this.password = (event.target as HTMLInputElement).value)}
+              />
+              <small
+                >Share this password and the invitation. Use the same username
+                to resume on another device.</small
+              >
+            </label>`
+          : nothing}
         <div class="pw-stepper-field">
           <div>
             <span>${placeholderCopy.wizard.playerCountLabel}</span
@@ -432,25 +436,23 @@ export class PersistentWorldCreationWizard extends LitElement {
             </button>
           </div>
         </div>
-        ${
-          this.mode === "teams"
-            ? html`<label class="pw-field pw-field--compact"
-                ><span>Your team</span>
-                <select
-                  .value=${this.teamId}
-                  @change=${(event: Event) =>
-                    (this.teamId = (
-                      event.currentTarget as HTMLSelectElement
-                    ).value)}
-                >
-                  <option value="team-1">Team 1</option>
-                  <option value="team-2">Team 2</option>
-                  <option value="team-3">Team 3</option>
-                  <option value="team-4">Team 4</option>
-                </select></label
-              >`
-            : nothing
-        }
+        ${this.mode === "teams"
+          ? html`<label class="pw-field pw-field--compact"
+              ><span>Your team</span>
+              <select
+                .value=${this.teamId}
+                @change=${(event: Event) =>
+                  (this.teamId = (
+                    event.currentTarget as HTMLSelectElement
+                  ).value)}
+              >
+                <option value="team-1">Team 1</option>
+                <option value="team-2">Team 2</option>
+                <option value="team-3">Team 3</option>
+                <option value="team-4">Team 4</option>
+              </select></label
+            >`
+          : nothing}
       </div>
     `;
   }
@@ -489,11 +491,10 @@ export class PersistentWorldCreationWizard extends LitElement {
             (preset) => html`
               <button
                 type="button"
-                class="pw-schedule-card ${
-                  !this.exactSchedule && this.schedulePreset === preset.id
-                    ? "is-selected"
-                    : ""
-                }"
+                class="pw-schedule-card ${!this.exactSchedule &&
+                this.schedulePreset === preset.id
+                  ? "is-selected"
+                  : ""}"
                 @click=${() => this.selectPreset(preset)}
               >
                 <strong>${preset.label}</strong
@@ -512,21 +513,19 @@ export class PersistentWorldCreationWizard extends LitElement {
             >
           </button>
         </div>
-        ${
-          this.exactSchedule
-            ? html`<label class="pw-field"
-                ><span>Local start time</span
-                ><input
-                  type="datetime-local"
-                  .value=${this.toDateTimeLocal(this.startsAt)}
-                  min=${this.toDateTimeLocal(Date.now() + 2 * 60 * 1000)}
-                  max=${this.toDateTimeLocal(
-                    Date.now() + 14 * 24 * 60 * 60 * 1000,
-                  )}
-                  @change=${this.updateExactTime}
-              /></label>`
-            : nothing
-        }
+        ${this.exactSchedule
+          ? html`<label class="pw-field"
+              ><span>Local start time</span
+              ><input
+                type="datetime-local"
+                .value=${this.toDateTimeLocal(this.startsAt)}
+                min=${this.toDateTimeLocal(Date.now() + 2 * 60 * 1000)}
+                max=${this.toDateTimeLocal(
+                  Date.now() + 14 * 24 * 60 * 60 * 1000,
+                )}
+                @change=${this.updateExactTime}
+            /></label>`
+          : nothing}
         <div class="pw-schedule-confirmation">
           <span>Automatic launch</span
           ><strong>${formatWorldDate(this.startsAt)}</strong
@@ -549,7 +548,9 @@ export class PersistentWorldCreationWizard extends LitElement {
             </div>
             <h1>${this.name.trim()}</h1>
             <p class="pw-invitation-card__date">
-              ${this.customGame ? "Starts when the host is ready" : formatWorldDate(this.startsAt)}
+              ${this.customGame
+                ? "Starts when the host is ready"
+                : formatWorldDate(this.startsAt)}
             </p>
             <div class="pw-invitation-card__draft-status">
               <span aria-hidden="true"></span>
@@ -573,7 +574,9 @@ export class PersistentWorldCreationWizard extends LitElement {
           </div>
           <div class="pw-invitation-card__draft-note">
             <strong
-              >${this.access === "private" ? "Invitation only" : "Public listing"}</strong
+              >${this.access === "private"
+                ? "Invitation only"
+                : "Public listing"}</strong
             >
             <span>${this.maxHumans} player slots</span>
           </div>
@@ -597,9 +600,9 @@ export class PersistentWorldCreationWizard extends LitElement {
     return choices.map(
       ([value, label, detail]) => html`
         <label
-          class="pw-choice-card pw-choice-card--horizontal ${
-            current === value ? "is-selected" : ""
-          }"
+          class="pw-choice-card pw-choice-card--horizontal ${current === value
+            ? "is-selected"
+            : ""}"
         >
           <input
             type="radio"
